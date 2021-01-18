@@ -6,7 +6,6 @@ output: html_document
 
 Before you follow the directions below, please take a screenshot of your AWS console showing the running database and upload it to your repo.
 
-(test Git)
 
 ## Connect to AWS MySQL Database
 ```{r}
@@ -55,8 +54,26 @@ dbListTables(mydb)
 #Read a particular table
 dbReadTable(mydb, 'studentInfo')
 
+
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
+
+# Table 1 - student test scores 
+studentNumber <- paste(letters, 1:40, sep = "") 
+test_scores <- rnorm(40, mean = 85, sd = 5) 
+testScores <- data.frame(cbind(studentNumber, test_scores))
+
+# Table 2 - student Soc.Econ.Status 
+
+student_ses <- sample(c("below average", "average", "above average"), 40, replace = TRUE)
+studentSES <- data.frame(cbind(studentNumber, student_ses))
+View(studentSES)
+
+# Write new tables to DB 
+dbWriteTable(mydb, 'testScores', testScores)
+dbWriteTable(mydb, 'studentSES', studentSES)
+
+
 
 ```
 
