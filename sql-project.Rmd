@@ -11,6 +11,7 @@ Before you follow the directions below, please take a screenshot of your AWS con
 #install.packages("DBI", "RMySQL")
 
 library(DBI)
+install.packages("RMySQL")
 library(RMySQL)
 
 db_user <- 'admin'
