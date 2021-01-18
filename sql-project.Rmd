@@ -6,6 +6,8 @@ output: html_document
 
 Before you follow the directions below, please take a screenshot of your AWS console showing the running database and upload it to your repo.
 
+(test Git)
+
 ## Connect to AWS MySQL Database
 ```{r}
 #install.packages("DBI", "RMySQL")
