@@ -534,7 +534,7 @@ dbGetQuery(mydb, "INSERT INTO right_table VALUES ( 14, 'left 14');")
 dbGetQuery(mydb, "SELECT * FROM left_table;")
 dbGetQuery(mydb, "SELECT * FROM right_table;")
 
-#join
+#join --> inner join, match two tables
 dbGetQuery(mydb,"SELECT l.description AS left_table, r.description AS right_table 
            FROM left_table AS l 
            JOIN right_table AS r ON l.id = r.id")
@@ -544,36 +544,126 @@ dbGetQuery(mydb,"SELECT l.description AS left_table, r.description AS right_tabl
            FROM left_table AS l 
            RIGHT JOIN right_table AS r ON l.id = r.id")
 
-#left join, right_table NA
+#left join, right_table matches the left one
 dbGetQuery(mydb,"SELECT l.description AS left_table, r.description AS right_table 
            FROM left_table AS l 
            LEFT JOIN right_table AS r ON l.id = r.id")
 
-#Union
+#Union --> merge tables
 dbGetQuery(mydb, "SELECT * FROM left_table
            UNION
            SELECT * FROM right_table;")
 
 #what's difference between join and union?
+#join --> match
+#union --> merge
+
 
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
 
+#Discussed with Professor Lang to create two new tables that I would know what's in them
+
+#fourth attempt
+
+dbGetQuery(mydb, "CREATE TABLE def5 (id INTEGER, num INTEGER, color TEXT);")
+dbGetQuery(mydb, "CREATE TABLE def6 (id INTEGER, num INtEGER, color TEXT);")
+
+#insert
+dbGetQuery(mydb, "INSERT INTO def5 VALUES ( 1, 10, 'red');")
+dbGetQuery(mydb, "INSERT INTO def5 VALUES ( 2, 20, 'blue');")
+dbGetQuery(mydb, "INSERT INTO def5 VALUES ( 3, 30, 'green');")
+
+dbGetQuery(mydb, "INSERT INTO def6 VALUES ( 3, 30, 'green');")
+dbGetQuery(mydb, "INSERT INTO def6 VALUES ( 4, 40, 'violet');")
+dbGetQuery(mydb, "INSERT INTO def6 VALUES ( 5, 50, 'yellow');")
+
+#check tables
+dbGetQuery(mydb, "SELECT * FROM def5;")
+dbGetQuery(mydb, "SELECT * FROM def6;")
+
+#LEFT join
+dbGetQuery(mydb,"SELECT def5.num, def5.color, def6.num, def6.color 
+           FROM def5
+           LEFt JOIN def6 ON def5.id = def6.id")
+
+#right join
+dbGetQuery(mydb,"SELECT def5.num, def5.color, def6.num, def6.color 
+           FROM def5
+           RIGHT JOIN def6 ON def5.id = def6.id")
+
+
+#check tables in the DB
+#dbListTables(mydb)
+
+#drop tables
+#dbGetQuery(mydb,"DROP TABLE def5;")
+#dbGetQuery(mydb,"DROP TABLE def6;")
+
+
+###third attempt
+## lines with single # worked
+##df num1=1-3,num2=10-12,char=a
+#df3 <- data.frame(id = seq(from = 1, to = 30, by = 1), num1 = c(rep(1:3,length.out=30)), num2 = c(rep(10:12,length.out=30)), char1=c(rep(letters[1],length.out=30)))
+
+##id
+##df3$id <- 1:nrow(df3)
+
+##id = seq.int(nrow(df3))
+
+##df num1=2, num2=11,char=a-b
+#df4 <- data.frame(id = seq(from = 1, to = 30, by = 1), num1 = c(rep(2,30)), num2 = c(rep(11,30)), char1=c(rep(letters[1:2],length.out=30)))
+
+##id
+##df4$id <- 1:nrow(df4)
+
+
+##call SQL package
+#library(dplyr)
+
+##left join, df3 < df4
+##df34l <- left_join(df3, df4, by = c("id" = "id"))
+
+#worked -
+#dftest <- merge(df3,df4, all.x = TRUE)
+
+
+##right join, df3 > df4
+##df34r <- right_join(df3, df4, by = c("id" = "id"))
+
+#worked -
+#dftest2 <- merge(df3,df4, all.y = TRUE)
+
+#sencond attempt
+#r does not work, not same rows in either 1 or 2
+#create two tables with three variables with ID
+
+#df1 <- data.frame(id = seq(from = 1, to = 30, by = 1), num1 = c(rep(1:30)), num2 = c(rep_len(25:60,30)), char1=c(rep(letters[1:12],30))) 
+
+#df2 <- data.frame(id = seq(from = 1, to = 30, by = 1), num1 = c(rep(5:35,length.out=30)), num2 = c(rep(15:40,length.out=30)), char1=c(rep(letters,length.out=30)))
+
+#left join with df2 mathces df1
+#library(dplyr)
+#dfleft <- left_join(df1, df2)
+#dfright <- right_join(df1, df2)
+
+
+#first attemp, does not work with randomly generated tables
 #create id variable in toynew1 and toy2
 
 #add an ID Primary Key column
-dbGetQuery(mydb, "ALTER TABLE toynew1 ADD ID INTEGER AUTO_INCREMENT PRIMARY KEY") 
-dbGetQuery(mydb, "ALTER TABLE toy2 ADD ID INTEGER AUTO_INCREMENT PRIMARY KEY") 
+#dbGetQuery(mydb, "ALTER TABLE toynew1 ADD ID INTEGER AUTO_INCREMENT PRIMARY KEY") 
+#dbGetQuery(mydb, "ALTER TABLE toy2 ADD ID INTEGER AUTO_INCREMENT PRIMARY KEY") 
 
 #display
-dbGetQuery(mydb, "SELECT * FROM toynew1;")
-dbGetQuery(mydb, "SELECT * FROM toy2;")
+#dbGetQuery(mydb, "SELECT * FROM toynew1;")
+#dbGetQuery(mydb, "SELECT * FROM toy2;")
 
 #join the matching ones, use join
-dbGetQuery(mydb, "SELECT toynew1.ID, toy2.ID 
-FROM toynew1
-INNEr JOIN toy2 ON 
-toynew1.ID = toy2.ID")
+#dbGetQuery(mydb, "SELECT toynew1.n1, toynew1.n2, toynew1.n3, toynew1.ID, toy2.n1, toy2.n2, toy2.n3, toy2.ID 
+#FROM toynew1
+#LEFT JOIN toy2 ON 
+#toynew1.ID = toy2.ID")
 ```
 ```{r}
 #Now disconnect from your database
