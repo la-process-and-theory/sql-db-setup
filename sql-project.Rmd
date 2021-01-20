@@ -12,7 +12,6 @@ Before you follow the directions below, please take a screenshot of your AWS con
 #install.packages("DBI", "RMySQL")
 
 library(DBI)
-install.packages("RMySQL")
 library(RMySQL)
 
 db_user <- 'admin'
@@ -103,7 +102,14 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
 
+dbGetQuery(mydb, "SELECT test_scores AS 'Scores' FROM testScores ORDER BY test_scores DESC LIMIT 20;")
+
+
 #Read the other table according to a condition of one of the variables.
+
+
+dbGetQuery(mydb, "SELECT COUNT(*) FROM studentSES WHERE student_ses = 'average';") 
+
 
 ```
 
