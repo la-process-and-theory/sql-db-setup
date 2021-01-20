@@ -179,6 +179,7 @@ dbGetQuery(mydb,"CREATE TABLE test (
   student TEXT
   );")
 
+# shows all tables in SQL database 
 dbListTables(mydb)
 
 #Inserting data into the table
@@ -203,8 +204,24 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
+head(testScores)
+
+
+dbGetQuery(mydb, "CREATE TABLE scores (studentNumber TEXT, test_scores INTEGER );" ) 
+
+dbGetQuery(mydb,"INSERT INTO scores (studentNumber, test_scores) SELECT studentNumber, test_scores FROM testScores;")     
+
+dbListTables(mydb)
+dbGetQuery(mydb,"SELECT * FROM scores; " ) 
+
+# delete original table 
+
+dbGetQuery(mydb,"DROP TABLE testScores;") 
+dbListTables(mydb)
+         
 
 ```
+
 
 # NULL Value
 ```{r}
