@@ -1,6 +1,6 @@
 ---
 title: "sql-workshop"
-author: "Charles Lang"
+author: "Junhao Zhang"
 output: html_document
 ---
 
@@ -16,7 +16,7 @@ library(RMySQL)
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.cigrgbfkibwt.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -54,7 +54,16 @@ dbReadTable(mydb, 'studentInfo')
 
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
+BankWages <- read.csv("BankWages.csv", header = TRUE)
+CartelStability <- read.csv("CartelStability.csv", header = TRUE)
 
+dbWriteTable(mydb, "BankWages", BankWages)
+dbWriteTable(mydb, "CartelStability", CartelStability)
+
+dbListTables(mydb)
+
+dbReadTable(mydb, 'CartelStability')
+dbReadTable(mydb, 'BankWages')
 ```
 
 ## Getting into SQL - READING
@@ -82,9 +91,9 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
-
+dbGetQuery(mydb, "SELECT X, quantity FROM CartelStability ORDER BY X DESC LIMIT 20;")
 #Read the other table according to a condition of one of the variables.
-
+dbGetQuery(mydb, "SELECT X AS 'Number', ice FROM CartelStability LIMIT 20;") 
 ```
 
 ## Getting into SQL - UPDATING
@@ -122,8 +131,14 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
+dbGetQuery(mydb, "INSERT INTO CartelStability ( X,price, cartel, quantity) VALUES ('329','0.35', 'yes', '1532 ');")
+dbGetQuery(mydb, "SELECT * FROM CartelStability ORDER BY quantity LIMIT 10;")
 
 
+dbGetQuery(mydb, "DELETE FROM CartelStability WHERE quantity = 1532;")
+dbGetQuery(mydb, "DELETE FROM CartelStability WHERE quantity = 0;")
+
+dbGetQuery(mydb, "SELECT * FROM CartelStability ORDER BY quantity LIMIT 10;")
 ```
 
 ## Add/Deleting Table
@@ -158,7 +173,18 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
+dbGetQuery(mydb,"CREATE TABLE BankWages3 (
+  X INTEGER, 
+  job TEXT,
+  education INTEGER,
+  gender TEXT,
+  minority TEXT
+  );")
 
+dbListTables(mydb)
+dbGetQuery(mydb, "DROP TABLE Details;")
+dbGetQuery(mydb, "DROP TABLE BankWages;")
+dbGetQuery(mydb, "DROP TABLE BankWages2;")
 ```
 
 # NULL Value
@@ -211,7 +237,26 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
 #EXERCISE 5
 #Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+dbGetQuery(mydb,"CREATE TABLE BankWages (
+  X INTEGER, 
+  job TEXT,
+  education INTEGER,
+  gender TEXT,
+  minority TEXT
+  );")
 
+dbGetQuery(mydb, "DROP TABLE IF EXISTS BankWages;")
+
+dbGetQuery(mydb,"CREATE TABLE BankWages (
+   X INTEGER, 
+  job TEXT,
+  education INTEGER,
+  gender TEXT,
+  minority TEXT
+  );")
+dbGetQuery(mydb,"INSERT INTO BankWages (X, job,education,gender,minority) VALUES ('1', 'admin','15','female','yes');")
+dbListTables(mydb)
+dbGetQuery(mydb, "DROP TABLE BankWages;")
 ```
 
 
@@ -227,6 +272,9 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+dbGetQuery(mydb, "ALTER TABLE CartelStability ADD constant INTEGER DEFAULT 3 ")
+dbGetQuery(mydb, "SELECT * FROM CartelStability LIMIT 10;")
+dbGetQuery(mydb, "ALTER TABLE CartelStability DROP COLUMN constant;")
 ```
 
 
@@ -247,7 +295,11 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
-
+dbGetQuery(mydb,"CREATE TABLE newTable (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, 
+  score INTEGER, 
+  student TEXT
+  );")
 ```
 
 ## Filtering (WHERE)
@@ -277,7 +329,7 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
-
+dbGetQuery(mydb, "SELECT X, quantity FROM CartelStability WHERE X > 5 AND quantity >40000 ORDER BY X DESC;")
 ```
 
 ## Removing Duplicates
@@ -288,7 +340,10 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+dbGetQuery(mydb,"INSERT INTO CartelStability (X,price,cartel,quantity,ice) VALUES ('1', '0.4','yes','13632','yes');")
 
+dbGetQuery(mydb, "SELECT DISTINCT ice FROM CartelStability;")
+dbGetQuery(mydb, "SELECT DISTINCT ice, price FROM CartelStability;")
 ```
 
 ## Conditional Expressions (non-standard)
@@ -359,7 +414,56 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
+dbGetQuery(mydb, "DROP TABLE newTable4;")
+dbGetQuery(mydb, "DROP TABLE Table5;")
 
+dbGetQuery(mydb,"CREATE TABLE newTable4 (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, 
+  score INTEGER, 
+  student TEXT,
+  Type TEXT,
+  price INTEGER
+  );")
+
+dbGetQuery(mydb, "INSERT INTO newTable4 VALUES (11, 60, 'Ann','h',45);")
+dbGetQuery(mydb, "INSERT INTO newTable4 VALUES (12, 60, 'John','j',78);")
+dbGetQuery(mydb, "INSERT INTO newTable4 VALUES (13, 70, 'Peter','t',42);")
+dbGetQuery(mydb, "INSERT INTO newTable4 VALUES (14, 80, 'Zang','r',12);")
+dbGetQuery(mydb, "INSERT INTO newTable4 VALUES (15, 40, 'Kate','ui',56);")
+
+dbGetQuery(mydb,"CREATE TABLE Table5 (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, 
+  Day INTEGER, 
+  Level TEXT,
+  Type TEXT,
+  amount INTEGER
+  );")
+
+dbGetQuery(mydb, "INSERT INTO Table5 VALUES (12, 5, 'Medium','A',445);")
+dbGetQuery(mydb, "INSERT INTO Table5 VALUES (13, 7, 'Basic','A',787);")
+dbGetQuery(mydb, "INSERT INTO Table5 VALUES (14, 7, 'Advance','F',42);")
+dbGetQuery(mydb, "INSERT INTO Table5 VALUES (15, 2, 'Basic','C',124);")
+dbGetQuery(mydb, "INSERT INTO Table5 VALUES (16, 6, 'Medium','B',456);")
+
+dbGetQuery(mydb, "SELECT * FROM newTable4;")
+dbGetQuery(mydb, "SELECT * FROM Table5;")
+
+dbGetQuery(mydb,"SELECT T.id AS Table5, n.id AS newTable4 
+           FROM Table5 AS T 
+           JOIN newTable4 AS n ON T.id = n.id")
+
+dbGetQuery(mydb,"SELECT T.id AS Table5, n.id AS newTable4 
+           FROM Table5 AS T
+           RIGHT JOIN newTable4 AS n ON n.id = n.id")
+
+dbGetQuery(mydb,"SELECT T.id AS Table5, n.id AS newTable4 
+           FROM Table5 AS T 
+           LEFT JOIN newTable4 AS n ON T.id = n.id")
+
+#Union
+dbGetQuery(mydb, "SELECT * FROM Table5
+           UNION
+           SELECT * FROM newTable4;")
 ```
 ```{r}
 #Now disconnect from your database
