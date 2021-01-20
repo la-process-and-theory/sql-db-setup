@@ -1,6 +1,6 @@
 ---
 title: "sql-workshop"
-author: "Charles Lang"
+author: "Yilin Lu"
 output: html_document
 ---
 
