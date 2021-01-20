@@ -150,6 +150,25 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
 
+dbGetQuery(mydb, "SELECT * FROM testScores LIMIT 10;")
+
+dbGetQuery(mydb, "INSERT INTO testScores(studentNumber, test_scores) VALUES  ('aaa1', '0');") 
+dbGetQuery(mydb, "UPDATE testScores SET test_scores = 'NULL' WHERE studentNumber = 'aaa1';")
+dbGetQuery(mydb, "SELECT * FROM testScores WHERE studentNumber = 'aaa1';")
+
+dbGetQuery(mydb, "SELECT * FROM studentSES LIMIT 10;") 
+
+dbGetQuery(mydb, "UPDATE studentSES SET student_ses = 'above average' WHERE studentNumber = 'c3';")
+dbGetQuery(mydb, "SELECT * FROM studentSES WHERE studentNumber = 'c3';")
+
+
+# delete the row I inserted in testScores 
+
+dbGetQuery(mydb, "DELETE FROM testScores WHERE studentNumber = 'aaa1';")
+
+# delete the row I edited in studentSES
+dbGetQuery(mydb, "DELETE FROM studentSES WHERE studentNumber = 'c3';")
+
 ```
 
 ## Add/Deleting Table
