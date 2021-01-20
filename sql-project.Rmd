@@ -1,6 +1,6 @@
 ---
 title: "sql-workshop"
-author: "Charles Lang"
+author: "Jiasheng Yu"
 output: html_document
 ---
 
@@ -9,6 +9,7 @@ Before you follow the directions below, please take a screenshot of your AWS con
 ## Connect to AWS MySQL Database
 ```{r}
 #install.packages("DBI", "RMySQL")
+#install.packages('RMySQL')
 
 library(DBI)
 library(RMySQL)
@@ -16,7 +17,7 @@ library(RMySQL)
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.chp9yqelef9i.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -47,14 +48,27 @@ dbWriteTable(mydb, "courses", courses)
 dbWriteTable(mydb, "studentRegistration", studentRegistration)
 
 #List tables to see that table was added
-dbListTables(mydb)
+#dbListTables(mydb)
 
 #Read a particular table
-dbReadTable(mydb, 'studentInfo')
+# dbReadTable(mydb, 'studentInfo')
 
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
+library(dplyr)
 
+toy1<-select(studentInfo,code_module,code_presentation,id_student,gender,num_of_prev_attempts,studied_credits,disability,final_result)
+
+toy1<-toy1[c(1:30),]
+
+toy2<-select(studentInfo,id_student,gender,region,highest_education,imd_band,age_band)
+
+toy2<-toy2[c(1:30),]
+
+dbWriteTable(mydb,"stu_grades",toy1)
+dbWriteTable(mydb,"stu_info_subset",toy2)
+
+dbListTables(mydb)
 ```
 
 ## Getting into SQL - READING
@@ -83,7 +97,28 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
 
+dbGetQuery(mydb,"
+                  SELECT  code_module,
+                          code_presentation,
+                          id_student AS stu_id,
+                          gender,
+                          num_of_prev_attempts,
+                          studied_credits,
+                          disability,
+                          final_result
+                  FROM    stu_grades
+                  ORDER BY
+                          stu_id
+                  DESC
+                  LIMIT 20;
+                ")
 #Read the other table according to a condition of one of the variables.
+
+dbGetQuery(mydb,"
+                  SELECT  *
+                  FROM    stu_info_subset
+                  WHERE   gender = 'M';
+                ")
 
 ```
 
@@ -123,6 +158,46 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
+#insert
+dbGetQuery(mydb,"
+                  INSERT INTO stu_grades (code_module,
+                                          code_presentation,
+                                          id_student,
+                                          gender,
+                                          num_of_prev_attempts,
+                                          studied_credits,
+                                          disability,
+                                          final_result) 
+                              VALUES     ('BBB',
+                                          '2021J',
+                                           1,
+                                          'M',
+                                           10,
+                                           100,
+                                           NULL ,
+                                           'Pass');")
+dbGetQuery(mydb," SELECT * FROM stu_grades; ")
+#update
+
+dbGetQuery(mydb,"
+           
+                  UPDATE  stu_info_subset
+                  set     gender = 'F'
+                  WHERE   id_student = 11391;
+           
+           ")
+dbGetQuery(mydb," SELECT * FROM stu_info_subset WHERE id_student = 11391;")
+
+#delete
+dbGetQuery(mydb," DELETE
+                  FROM   stu_grades
+                  WHERE  disability IS NULL;")
+dbGetQuery(mydb," SELECT * FROM stu_grades; ")
+
+dbGetQuery(mydb," DELETE
+                  FROM   stu_info_subset
+                  WHERE  id_student = 11391;")
+dbGetQuery(mydb," SELECT * FROM stu_info_subset WHERE id_student = 11391;")
 
 ```
 
@@ -159,6 +234,50 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
 
+#create
+
+dbGetQuery(mydb," 
+                  CREATE TABLE new_stu_grades     
+                                (code_module TEXT,
+                                 code_presentation TEXT,
+                                 id_student INTEGER,
+                                 gender TEXT,
+                                 num_of_prev_attempts INTEGER,
+                                 studied_credits INTEGER,
+                                 disability TEXT,
+                                 final_result TEXT) 
+                
+           ")
+
+dbGetQuery(mydb," 
+                  INSERT INTO new_stu_grades(
+                  
+                          code_module,
+                          code_presentation,
+                          id_student,
+                          gender,
+                          num_of_prev_attempts,
+                          studied_credits,
+                          disability,
+                          final_result
+                          )
+                          
+                  SELECT  code_module,
+                          code_presentation,
+                          id_student AS stu_id,
+                          gender,
+                          num_of_prev_attempts,
+                          studied_credits,
+                          disability,
+                          final_result
+                  FROM    stu_grades;")
+ 
+dbGetQuery(mydb,"SELECT * FROM new_stu_grades;")
+#delete table
+dbGetQuery(mydb,"DROP TABLE stu_grades;")
+#dbGetQuery(mydb,"SELECT * FROM  stu_grades;") -- doesn't exist
+
+
 ```
 
 # NULL Value
@@ -166,10 +285,10 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 #NULL is a state (similar to R), represents the lack of a value. But is not compatible with R backend so this code doesn't work as part of dbGetQuery()
 
 #This doesn't work because NULL is not a value
-SELECT * FROM test WHERE score = NULL;
+# SELECT * FROM test WHERE score = NULL;
 
 #Instead use
-SELECT * FROM test WHERE score is NULL;
+# SELECT * FROM test WHERE score is NULL;
 
 ```
 
@@ -210,7 +329,46 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
 #EXERCISE 5
-#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table. 
+
+dbGetQuery(mydb,"
+           
+                CREATE TABLE new_stu_info_subset(
+                          id_student INTEGER DEFAULT 0,
+                          gender TEXT,
+                          region TEXT,
+                          highest_education TEXT,
+                          imd_band TEXT,
+                          age_band TEXT
+              
+                
+                );
+                            
+           ")
+dbListTables(mydb)
+dbGetQuery(mydb,"
+           
+                INSERT INTO new_stu_info_subset(
+                          
+                          gender,
+                          region,
+                          highest_education,
+                          imd_band ,
+                          age_band 
+                
+                )
+                VALUES
+                ('M','Scotland','HE Qualification','1','2'),
+                ('F','Scotland','HE Qualification','3','4')
+                
+                ")
+dbGetQuery(mydb,"
+           
+                SELECT * FROM new_stu_info_subset;
+           
+           ")
+dbGetQuery(mydb,"DROP TABLE new_stu_info_subset;")
+dbListTables(mydb)
 
 ```
 
@@ -227,6 +385,14 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+dbGetQuery(mydb,"
+                  ALTER TABLE stu_info_subset ADD new_col INTEGER DEFAULT 3;
+           ")
+dbGetQuery(mydb," SELECT * FROM stu_info_subset")
+dbGetQuery(mydb," ALTER TABLE stu_info_subset DROP new_col; ")
+dbGetQuery(mydb," SELECT * FROM stu_info_subset;")
+
 ```
 
 
@@ -247,7 +413,22 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+dbGetQuery(mydb,"
+                  CREATE TABLE new_table (
+                         id INTEGER AUTO_INCREMENT PRIMARY KEY,
+                         name TEXT,
+                         email TEXT,
+                         address TEXT
+                  );
+           
+           
+           ")
+dbListTables(mydb)
 
+dbGetQuery(mydb," INSERT INTO new_table (name,email,address) 
+                  VALUES('A','A@email.com','Address: A'),
+                        ('B','B@email.com','Address: B')")
+dbGetQuery(mydb,"SELECT * FROM new_table;")
 ```
 
 ## Filtering (WHERE)
@@ -278,6 +459,22 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
 
+dbGetQuery(mydb,"
+                  SELECT  *
+                  FROM    stu_info_subset
+                  WHERE   highest_education LIKE '_e%';
+           
+           
+           ")
+
+dbGetQuery(mydb,"
+                  SELECT  *
+                  FROM    stu_info_subset
+                  WHERE   region LIKE '%Region%'
+                  	AND   imd_band IN ('30-40%', '70-80%');
+           
+           ")
+
 ```
 
 ## Removing Duplicates
@@ -288,6 +485,15 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+
+dbGetQuery(mydb,"SELECT * FROM stu_info_subset;")
+dbGetQuery(mydb,"
+                  INSERT INTO stu_info_subset
+                  VALUES  (2,28400,'F','Scotland','HE Qualification','20-30%','35-55')
+           
+           ")
+
+dbGetQuery(mydb," SELECT DISTINCT * FROM stu_info_subset;")
 
 ```
 
@@ -359,8 +565,32 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
+dbListTables(mydb)
+dbGetQuery(mydb,"DESC new_stu_grades;")
+dbGetQuery(mydb,"SELECT * FROM new_stu_grades;")
+dbGetQuery(mydb,"DESC stu_info_subset")
+dbGetQuery(mydb,"SELECT * FROM stu_info_subset;")
 
+# dbGetQuery(mydb," select distinct a.id_student,b.id_student from new_stu_grades a
+#                   left join
+#                   stu_info_subset b
+#                   on a.id_student = b.id_student
+#                   order by a.id_student desc
+#            ")
+dbGetQuery(mydb," 
+                  SELECT  a.*,
+                          b.*
+                  FROM    new_stu_grades a
+                  LEFT JOIN
+                          stu_info_subset b
+                      ON    
+                          a.id_student = b.id_student
+           
+           
+           
+           ")
 ```
+
 ```{r}
 #Now disconnect from your database
 dbDisconnect(mydb)
