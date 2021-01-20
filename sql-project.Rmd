@@ -270,9 +270,35 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES ('1', 'A');")
 #NULL is exempt
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
+dbGetQuery(mydb, "SELECT * FROM test2;") 
+dbListTables(mydb)
 
 #EXERCISE 5
 #Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+
+head(testScores)
+
+
+dbGetQuery(mydb,"CREATE TABLE scores2 (
+   studentNumber TEXT,
+   test_scores INTEGER DEFAULT 0
+   );")
+
+dbListTables(mydb)
+
+dbGetQuery(mydb,"INSERT INTO scores2 (studentNumber, test_scores) VALUES (NULL, 80 );")
+dbGetQuery(mydb,"INSERT INTO scores2 (studentNumber, test_scores) VALUES ('Reginald', NULL );")
+
+# display new table 
+dbGetQuery(mydb, "SELECT * FROM scores2 ; ") 
+
+# delete new table
+
+dbGetQuery(mydb, "DROP TABLE IF EXISTS scores2; ") 
+dbListTables(mydb) 
+
+
+
 
 ```
 
