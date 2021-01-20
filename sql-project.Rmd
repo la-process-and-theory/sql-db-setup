@@ -1,6 +1,6 @@
 ---
 title: "sql-workshop"
-author: "Charles Lang"
+author: "Zach Friedman"
 output: html_document
 ---
 
@@ -8,15 +8,16 @@ Before you follow the directions below, please take a screenshot of your AWS con
 
 ## Connect to AWS MySQL Database
 ```{r}
-#install.packages("DBI", "RMySQL")
 
 library(DBI)
 library(RMySQL)
+library(randomNames)
+library(tidyverse)
 
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.cu6fs2l9ndeg.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -25,6 +26,7 @@ summary(mydb)
 ```
 
 ## Load OU Data
+
 ```{r}
 #Student demographic data
 studentInfo <- read.csv("studentInfo.csv", header = TRUE)
@@ -36,6 +38,7 @@ studentRegistration <- read.csv("studentRegistration.csv", header = TRUE)
 ```
 
 ## Write data to the DB using the DBI package
+
 ```{r}
 #List the tables in the DB - should be zero
 dbListTables(mydb)
@@ -54,10 +57,24 @@ dbReadTable(mydb, 'studentInfo')
 
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
+rand_names = randomNames(45)
+
+
+fake_tests <- data.frame(student_name = rand_names, test_score = rnorm(45, mean=80, sd=5),hours_studied = rnorm(45, mean=2, sd=0.5))
+
+
+activities <- c("chess", "football", "dance", "soccer", "cubing")
+
+fake_activities <- data.frame(student_name = rand_names,favorite_activity = sample(activities,45,replace = TRUE),cumulative_practice_hours = rnorm(45, mean=1000, sd=200)) %>% select(student_name,favorite_activity, cumulative_practice_hours) 
+
+
+dbWriteTable(mydb, "fake_tests", fake_tests,overwrite = TRUE)
+dbWriteTable(mydb, "fake_activities", fake_activities,overwrite = TRUE)
 
 ```
 
 ## Getting into SQL - READING
+
 ```{r}
 #Query a portion of the database (always returns dataframe)
 dbGetQuery(mydb, "SELECT * FROM studentInfo LIMIT 10;")
@@ -83,11 +100,16 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
 
+dbGetQuery(mydb, "SELECT student_name, test_score, hours_studied AS prep_in_hours FROM fake_tests ORDER BY test_score DESC LIMIT 20;")
+
 #Read the other table according to a condition of one of the variables.
+
+dbGetQuery(mydb, "SELECT student_name, favorite_activity, cumulative_practice_hours FROM fake_activities WHERE favorite_activity = 'chess';")
 
 ```
 
 ## Getting into SQL - UPDATING
+
 ```{r}
 #Count rows
 dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment;")
@@ -123,10 +145,18 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
+dbGetQuery(mydb, "INSERT INTO fake_tests (student_name, test_score) VALUES ('Friedman, Zach',100);")
+dbGetQuery(mydb, "SELECT * FROM fake_tests ORDER BY test_score DESC LIMIT 10;")
+dbGetQuery(mydb, "DELETE FROM fake_tests WHERE student_name = 'Friedman, Zach';")
 
+
+dbGetQuery(mydb, "UPDATE fake_activities SET cumulative_practice_hours = 10000 WHERE row_names = 2;")
+dbGetQuery(mydb, "SELECT * FROM fake_activities ORDER BY cumulative_practice_hours DESC LIMIT 10;")
+dbGetQuery(mydb, "DELETE FROM fake_activities WHERE cumulative_practice_hours = 10000;")
 ```
 
 ## Add/Deleting Table
+
 ```{r}
 #Creating a new table in SQL
 dbGetQuery(mydb,"CREATE TABLE test (
@@ -159,21 +189,34 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
 
+dbGetQuery(mydb, "DROP TABLE IF EXISTS sql_tests;")
+
+dbGetQuery(mydb,"CREATE TABLE sql_tests (
+  student_name TEXT, 
+  test_score FLOAT,
+  hours_studied FLOAT);")
+
+
+dbGetQuery(mydb,"INSERT INTO sql_tests (student_name, test_score,hours_studied) SELECT student_name, test_score,hours_studied FROM fake_tests;")
+dbGetQuery(mydb, "SELECT * FROM sql_tests;")
+dbGetQuery(mydb, "DROP TABLE IF EXISTS fake_tests;")
 ```
 
 # NULL Value
+
 ```{r}
 #NULL is a state (similar to R), represents the lack of a value. But is not compatible with R backend so this code doesn't work as part of dbGetQuery()
 
 #This doesn't work because NULL is not a value
-SELECT * FROM test WHERE score = NULL;
+# SELECT * FROM test WHERE score = NULL;
 
 #Instead use
-SELECT * FROM test WHERE score is NULL;
+# SELECT * FROM test WHERE score is NULL;
 
 ```
 
 # Constraints
+
 ```{r}
 #Create table where student column *cannot* be NULL
 dbGetQuery(mydb,"CREATE TABLE test2 (
@@ -210,12 +253,26 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
 #EXERCISE 5
-#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+#Recreate one of your toy data tables with the constraint that for one of the integer variables the default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
 
+dbGetQuery(mydb, "CREATE TABLE sql_activities (
+student_name TEXT,
+favorite_activity TEXT,
+cumulative_practice_hours DOUBLE DEFAULT 0);")
+
+dbGetQuery(mydb,"INSERT INTO sql_activities (student_name, favorite_activity,cumulative_practice_hours) SELECT student_name, favorite_activity,cumulative_practice_hours FROM fake_activities;")
+dbGetQuery(mydb, "SELECT * FROM sql_activities LIMIT 10;")
+
+
+dbGetQuery(mydb, "INSERT INTO sql_activities (student_name, favorite_activity) VALUES ('Friedman, Zach', 'cubing');")
+dbGetQuery(mydb, "SELECT * FROM sql_activities ORDER BY cumulative_practice_hours LIMIT 10;")
+
+dbGetQuery(mydb, "DROP TABLE IF EXISTS sql_activities;")
 ```
 
 
 # Adding a column with a default value
+
 ```{r}
 #Add a column with default value 1
 dbGetQuery(mydb, "ALTER TABLE studentAssessment ADD email INTEGER DEFAULT 1 ")
@@ -227,10 +284,17 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+dbGetQuery(mydb, "ALTER TABLE fake_activities ADD ability_level INTEGER DEFAULT 3")
+dbGetQuery(mydb, "SELECT * FROM fake_activities")
+
+
+dbGetQuery(mydb, "ALTER TABLE fake_activities DROP COLUMN ability_level")
 ```
 
 
 # ID Columns
+
 ```{r}
 dbGetQuery(mydb,"CREATE TABLE test3 (
   id INTEGER AUTO_INCREMENT PRIMARY KEY, #Not standard syntax
@@ -248,9 +312,21 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
 
+dbGetQuery(mydb, "CREATE TABLE sql_fun (
+           id INTEGER AUTO_INCREMENT PRIMARY KEY,
+           free_time DOUBLE,
+           fun_rating INTEGER,
+           name TEXT);")
+
+dbGetQuery(mydb, "INSERT INTO sql_fun (free_time, fun_rating, name) VALUES (2.13, 7, 'John');")
+dbGetQuery(mydb, "INSERT INTO sql_fun (free_time, fun_rating, name) VALUES (2.51, 6, 'Lucy');")
+
+dbGetQuery(mydb, "SELECT * FROM sql_fun;")
+
 ```
 
 ## Filtering (WHERE)
+
 ```{r}
 dbGetQuery(mydb, "SELECT id_student, date_submitted FROM studentAssessment WHERE date_submitted > 550 ORDER BY date_submitted DESC;")
 
@@ -278,9 +354,11 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
 
+dbGetQuery(mydb, "SELECT * FROM fake_activities WHERE student_name LIKE 'M%' AND cumulative_practice_hours > 750")
 ```
 
 ## Removing Duplicates
+
 ```{r}
 dbGetQuery(mydb, "SELECT DISTINCT region FROM studentInfo;")
 
@@ -288,10 +366,14 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+dbGetQuery(mydb, "INSERT INTO fake_activities (row_names, student_name, favorite_activity, cumulative_practice_hours) VALUES ('1', 'Martinez, Trenda','dance',200.241)")
+
+dbGetQuery(mydb, "SELECT DISTINCT student_name, favorite_activity FROM fake_activities ORDER BY student_name")
 
 ```
 
 ## Conditional Expressions (non-standard)
+
 ```{r}
 dbGetQuery(mydb, "CREATE TABLE booltest (a INTEGER, b INTEGER);")
 dbGetQuery(mydb, "INSERT INTO booltest VALUES (1, 0);")
@@ -309,6 +391,7 @@ dbGetQuery(mydb,"SELECT
 ```
 
 #Relationships (JOIN) - *Slide*
+
 ```{r}
 
 #Create two tables with matches and join them
@@ -360,6 +443,13 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
 
+dbGetQuery(mydb, "ALTER TABLE fake_activities ADD id INTEGER AUTO_INCREMENT PRIMARY KEY;")
+dbGetQuery(mydb, "ALTER TABLE sql_tests ADD id INTEGER AUTO_INCREMENT PRIMARY KEY;")
+dbGetQuery(mydb, "UPDATE sql_tests SET id = 70 WHERE id = 1;") #changed one id number (Martinez, Trenda) outside the range of 1-45 to ensure left_join has one missing test_score value
+
+dbGetQuery(mydb, "SELECT l.student_name AS fake_activities_names, r.test_score AS test_score
+           FROM fake_activities AS l
+           LEFT JOIN sql_tests AS r on l.id = r.id LIMIT 10")
 ```
 ```{r}
 #Now disconnect from your database
