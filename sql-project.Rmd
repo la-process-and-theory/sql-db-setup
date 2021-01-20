@@ -8,15 +8,15 @@ Before you follow the directions below, please take a screenshot of your AWS con
 
 ## Connect to AWS MySQL Database
 ```{r}
-#install.packages("DBI", "RMySQL")
-
+#install.packages("DBI")
+#install.packages("RMySQL")
 library(DBI)
 library(RMySQL)
 
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.chtdqs80jv9d.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -54,7 +54,20 @@ dbReadTable(mydb, 'studentInfo')
 
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
+dbGetQuery(mydb,"DROP TABLE IF EXISTS toydata1")
+dbGetQuery(mydb,"DROP TABLE IF EXISTS toydata2")
+dbGetQuery(mydb,"DROP TABLE IF EXISTS toydata3")
+a<-c(1:20, letters[1:20])
+b<-c(letters[5:23], 15:35)
+c<-c(0:15, letters[1:10], 16:29)
+toydata1<-as.data.frame(cbind(a,b,c))
+dbWriteTable(mydb, "toydata1", toydata1)
 
+d<-c(1:30)
+e<-c(letters[1:20], 1:10)
+f<-c(1:20, letters[1:10])
+toydata2<-as.data.frame(cbind(d,e,f))
+dbWriteTable(mydb, "toydata2", toydata2)
 ```
 
 ## Getting into SQL - READING
@@ -82,9 +95,9 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
-
+dbGetQuery(mydb, "SELECT d AS 'DDDDD', e FROM toydata2 ORDER BY e DESC LIMIT 20;")
 #Read the other table according to a condition of one of the variables.
-
+dbGetQuery(mydb, "Select a FROM toydata1 ORDER BY b DESC")
 ```
 
 ## Getting into SQL - UPDATING
@@ -122,8 +135,12 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
-
-
+dbGetQuery(mydb, "INSERT INTO toydata1 (a, b) VALUES ('aaaaa', 'bbbbb');")
+dbGetQuery(mydb, "UPDATE toydata2 SET e = 'changedvalue' WHERE f=1;")
+dbGetQuery(mydb, "SELECT * FROM toydata1")
+dbGetQuery(mydb, "SELECT * FROM toydata2")
+dbGetQuery(mydb, "DELETE FROM toydata1 WHERE a = 'aaaaa';")
+dbGetQuery(mydb, "DELETE FROM toydata2 WHERE e = 'changedvalue';")
 ```
 
 ## Add/Deleting Table
@@ -158,7 +175,9 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
-
+dbGetQuery(mydb,"CREATE TABLE toydata3 (SELECT * FROM toydata1);")
+dbGetQuery(mydb,"SELECT * FROM toydata3;")
+dbGetQuery(mydb,"DROP TABLE IF EXISTS toydata1")
 ```
 
 # NULL Value
@@ -166,10 +185,10 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 #NULL is a state (similar to R), represents the lack of a value. But is not compatible with R backend so this code doesn't work as part of dbGetQuery()
 
 #This doesn't work because NULL is not a value
-SELECT * FROM test WHERE score = NULL;
+# SELECT * FROM test WHERE score = NULL;
 
 #Instead use
-SELECT * FROM test WHERE score is NULL;
+# SELECT * FROM test WHERE score is NULL;
 
 ```
 
@@ -210,8 +229,15 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
 #EXERCISE 5
-#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
-
+#Recreate one of your toy data tables with the constraint that for one of the integer variables the default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.
+dbGetQuery(mydb,"CREATE TABLE toydata1(
+   d INT DEFAULT 0,
+   e TEXT,
+   f TEXT
+)")
+dbGetQuery(mydb,"INSERT INTO toydata1 (d,e,f) VALUES ('50','X','Y');")
+dbGetQuery(mydb, "SELECT * FROM toydata1;")
+dbGetQuery(mydb,"DROP TABLE IF EXISTS toydata1")
 ```
 
 
@@ -227,6 +253,10 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+dbGetQuery(mydb,"ALTER TABLE toydata2 ADD email INTEGER DEFAULT 3")
+dbGetQuery(mydb, "SELECT * FROM toydata2;")
+dbGetQuery(mydb,"DROP TABLE IF EXISTS toydata2")
+
 ```
 
 
@@ -247,6 +277,14 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+dbGetQuery(mydb,"CREATE TABLE toydata1 (
+  id INT AUTO_INCREMENT PRIMARY KEY, 
+  x TEXT, 
+  y TEXT,
+  z TEXT
+  );")
+dbGetQuery(mydb, "SELECT * FROM toydata1;")
+
 
 ```
 
@@ -277,7 +315,12 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
-
+d<-c(1:30)
+e<-c(letters[1:20], 1:10)
+f<-c(1:20, letters[1:10])
+toydata2<-as.data.frame(cbind(d,e,f))
+dbWriteTable(mydb, "toydata2", toydata2)
+dbGetQuery(mydb,"SELECT d from toydata2 WHERE d>20 ORDER BY d DESC;")
 ```
 
 ## Removing Duplicates
@@ -288,7 +331,9 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
-
+dbGetQuery(mydb,"INSERT INTO toydata2 (d) VALUES ('1');")
+dbGetQuery(mydb, "SELECT d FROM toydata2;")
+dbGetQuery(mydb, "SELECT DISTINCT d FROM toydata2;")
 ```
 
 ## Conditional Expressions (non-standard)
@@ -358,20 +403,42 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 
 #EXERCISE 10
-# Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
+# Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other.
+dbGetQuery(mydb,"DROP TABLE IF EXISTS toydata1")
+dbGetQuery(mydb,"DROP TABLE IF EXISTS toydata2")
+a<-c(1:20, letters[1:20])
+b<-c(letters[5:23], 15:35)
+c<-c(0:15, letters[1:10], 16:29)
+id<-c(1:40)
+toydata1<-as.data.frame(cbind(a,b,c,id))
+dbWriteTable(mydb, "toydata1", toydata1)
+dbGetQuery(mydb, "SELECT * FROM toydata1;")
+
+d<-c(1:40)
+e<-c(letters[1:20], 1:20)
+f<-c(1:20, letters[1:20])
+id<-c(11:50)
+toydata2<-as.data.frame(cbind(d,e,f,id))
+dbWriteTable(mydb, "toydata2", toydata2)
+dbGetQuery(mydb, "SELECT * FROM toydata2;")
+
+dbGetQuery(mydb,"SELECT l.*, r.*
+           FROM toydata1 l 
+           JOIN toydata2 r 
+           ON l.id = r.id")
 
 ```
 ```{r}
 #Now disconnect from your database
 dbDisconnect(mydb)
 
-#Then retunr to your AWS console and:
+#Then return to your AWS console and:
 
 #1. Click on "Actions" and then "Stop"
 #2. Do NOT make a snapshot
 #3 Click on "Actions" again and click "Delete"
 #4. Unclick "Make a final snapshot"
-#5. Clicl "I acknowledge that upon instance deletion, automated backups, including system snapshots and point-in-time recovery, will no longer be available."
+#5. Click "I acknowledge that upon instance deletion, automated backups, including system snapshots and point-in-time recovery, will no longer be available."
 #6. Type "delete me" into the field
 
 #Failure to follow these steps could result in charges to your credit card.
