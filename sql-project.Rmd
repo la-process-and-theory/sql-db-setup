@@ -10,13 +10,14 @@ Before you follow the directions below, please take a screenshot of your AWS con
 ```{r}
 #install.packages("DBI", "RMySQL")
 
+install.packages("RMySQL")
 library(DBI)
 library(RMySQL)
 
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-2.coi6slprbbcu.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -53,8 +54,24 @@ dbListTables(mydb)
 dbReadTable(mydb, 'studentInfo')
 
 #EXERCISE 1
-#Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
+#Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these data frames to your SQL database using the DBI commands. Name the tables whatever you like.
 
+#Data Set 1
+employee<-c("Emma","Peter","Lucas","A","B","C","D","E","F","G","H","I","J","K","O","Emma","Peter","Lucas","A","B","C","D","E","F","G","H","I","J","K","O")
+salary<-c(21000,23400,26800,27800,28600,29300,30000,31000,32000,33000,34000,35000,36000,37000,38000,21000,23400,26800,27800,28600,29300,30000,31000,32000,33000,34000,35000,36000,37000,38000)
+startdate<-as.Date(c("2010-11-1","2008-3-2","2007-3-14","2006-01-01","2010-11-1","2008-3-2","2007-3-14","2006-01-01","2010-11-1","2008-3-2","2007-3-14","2006-01-01","2010-11-1","2008-3-2","2007-3-14","2010-11-1","2008-3-2","2007-3-14","2006-01-01","2010-11-1","2008-3-2","2007-3-14","2006-01-01","2010-11-1","2008-3-2","2007-3-14","2006-01-01","2010-11-1","2008-3-2","2007-3-14"))
+
+EmployeeInfo <- data.frame(employee,salary,startdate)
+
+#Data Set2
+Rank <- 1:30
+Country <- c("China","India","United States","Indonesia","Pakistan","Brazil","Nigeria","Bangladesh","Russia","Mexico","Japan","Ethiopia","Philippines","Egypt","Vietnam,","China","India","United States","Indonesia","Pakistan","Brazil","Nigeria","Bangladesh","Russia","Mexico","Japan","Ethiopia","Philippines","Egypt","Vietnam")
+Population <- c(1427647786,1352642280,327096265,267670543,212228286,209469323,195874683,161376708,145734308,126190788,127202192,1427647786,1352642280,327096265,267670543,212228286,209469323,195874683,161376708,145734308,126190788,127202192,8,7,6,5,4,3,2,1)
+
+CountryPopulation <- data.frame(Rank,Country,Population)
+
+dbWriteTable(mydb,"EmployeeInfo",EmployeeInfo)
+dbWriteTable(mydb,"CountryPopulation",CountryPopulation)
 ```
 
 ## Getting into SQL - READING
@@ -83,7 +100,19 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
 
+dbGetQuery(mydb, "SELECT employee,salary FROM EmployeeInfo ORDER BY salary DESC LIMIT 20;") 
+
 #Read the other table according to a condition of one of the variables.
+
+dbGetQuery(mydb, "SELECT COUNT(*) FROM CountryPopulation;")
+
+dbGetQuery(mydb, "SELECT COUNT(*) FROM EmployeeInfo WHERE salary > 30000;")
+
+dbGetQuery(mydb, "SELECT COUNT(Country) FROM CountryPopulation  WHERE Population > 30000000;")
+
+dbGetQuery(mydb, "SELECT COUNT(*) FROM EmployeeInfo WHERE salary > 20000 AND employee = 'Emma';")
+
+dbGetQuery(mydb, "SELECT employee AS 'Employee_Name' FROM EmployeeInfo LIMIT 15;") 
 
 ```
 
@@ -122,6 +151,12 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo (employee, salary, startdate) VALUES ('Lucy', '10000', 'Null');")
+
+dbGetQuery(mydb, "DELETE FROM EmployeeInfo WHERE employee = 'Lucy';")
+
+dbGetQuery(mydb, "UPDATE CountryPopulation Rank = 0 WHERE Country = China;")
 
 
 ```
