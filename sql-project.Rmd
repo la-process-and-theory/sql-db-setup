@@ -10,13 +10,14 @@ Before you follow the directions below, please take a screenshot of your AWS con
 ```{r}
 #install.packages("DBI", "RMySQL")
 
+install.packages("RMySQL")
 library(DBI)
 library(RMySQL)
 
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-2.coi6slprbbcu.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -53,8 +54,25 @@ dbListTables(mydb)
 dbReadTable(mydb, 'studentInfo')
 
 #EXERCISE 1
-#Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
+#Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these data frames to your SQL database using the DBI commands. Name the tables whatever you like.
 
+#Data Set 1
+employee<-c("Emma","Peter","Lucas","A","B","C","D","E","F","G","H","I","J","K","O","Emma","Peter","Lucas","A","B","C","D","E","F","G","H","I","J","K","O")
+salary<-c(21000,23400,26800,27800,28600,29300,30000,31000,32000,33000,34000,35000,36000,37000,38000,21000,23400,26800,27800,28600,29300,30000,31000,32000,33000,34000,35000,36000,37000,38000)
+startdate<-as.Date(c("2010-11-1","2008-3-2","2007-3-14","2006-01-01","2010-11-1","2008-3-2","2007-3-14","2006-01-01","2010-11-1","2008-3-2","2007-3-14","2006-01-01","2010-11-1","2008-3-2","2007-3-14","2010-11-1","2008-3-2","2007-3-14","2006-01-01","2010-11-1","2008-3-2","2007-3-14","2006-01-01","2010-11-1","2008-3-2","2007-3-14","2006-01-01","2010-11-1","2008-3-2","2007-3-14"))
+
+EmployeeInfo <- data.frame(employee,salary,startdate)
+
+#Data Set2
+Rank <- 1:30
+Country <- c("China","India","United States","Indonesia","Pakistan","Brazil","Nigeria","Bangladesh","Russia","Mexico","Japan","Ethiopia","Philippines","Egypt","Vietnam,","A","B","C","D","E","F","G","H","R","M","J","O","P","Q","V")
+Population <- c(1427647786,1352642280,327096265,267670543,212228286,209469323,195874683,161376708,145734308,126190788,127202192,1427647786,1352642280,327096265,267670543,212228286,209469323,195874683,161376708,145734308,126190788,127202192,8,7,6,5,4,3,2,1)
+
+CountryPopulation <- data.frame(Rank,Country,Population)
+
+
+dbWriteTable(mydb,"EmployeeInfo",EmployeeInfo)
+dbWriteTable(mydb,"CountryPopulation",CountryPopulation)
 ```
 
 ## Getting into SQL - READING
@@ -83,7 +101,19 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
 
+dbGetQuery(mydb, "SELECT employee,salary FROM EmployeeInfo ORDER BY salary DESC LIMIT 20;") 
+
 #Read the other table according to a condition of one of the variables.
+
+dbGetQuery(mydb, "SELECT COUNT(*) FROM CountryPopulation;")
+
+dbGetQuery(mydb, "SELECT COUNT(*) FROM EmployeeInfo WHERE salary > 30000;")
+
+dbGetQuery(mydb, "SELECT COUNT(Country) FROM CountryPopulation  WHERE Population > 30000000;")
+
+dbGetQuery(mydb, "SELECT COUNT(*) FROM EmployeeInfo WHERE salary > 20000 AND employee = 'Emma';")
+
+dbGetQuery(mydb, "SELECT employee AS 'Employee_Name' FROM EmployeeInfo LIMIT 15;") 
 
 ```
 
@@ -123,6 +153,17 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo (employee, salary, startdate) VALUES ('Lucy', '10000', 'Null');")
+
+dbGetQuery(mydb, "DELETE FROM EmployeeInfo WHERE employee = 'Lucy';")
+
+dbGetQuery(mydb, "UPDATE CountryPopulation SET Population = 'Null' WHERE Country = 'China';")
+
+dbGetQuery(mydb,"SELECT * FROM EmployeeInfo;")
+
+dbGetQuery(mydb,"SELECT * FROM CountryPopulation;")
+
+dbGetQuery(mydb, "DELETE FROM CountryPopulation WHERE Population = 'Null';")
 
 ```
 
@@ -159,17 +200,88 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
 
+dbGetQuery(mydb,"CREATE TABLE EmployeeInfo2 (
+  employee TEXT, 
+  salary INTEGER,
+  startdate DATE);")
+
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('Emma',21000,'2010-11-01');")
+           
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('Peter',23400,'2008-03-02');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('Lucas','26800','2007-03-14');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('A','27800','2006-01-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('B','28600','2010-11-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('C','29300','2008-03-02');")
+           
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('D','30000','2007-03-14');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('E','31000','2006-01-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('F','32000','2010-11-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('G','33000','2008-03-02');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('H','34000','2007-03-14');")
+           
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('I','35000','2006-01-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('J','36000','2010-11-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('K','37000','2008-03-02');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('O','38000','2007-03-14');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('Emma',21000,'2010-11-01');")
+           
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('Peter',23400,'2008-03-02');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('Lucas','26800','2007-03-14');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('A','27800','2006-01-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('B','28600','2010-11-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('C','29300','2008-03-02');")
+           
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('D','30000','2007-03-14');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('E','31000','2006-01-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('F','32000','2010-11-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('G','33000','2008-03-02');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('H','34000','2007-03-14');")
+           
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('I','35000','2006-01-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('J','36000','2010-11-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('K','37000','2008-03-02');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('O','38000','2007-03-14');")
+
+dbGetQuery(mydb,"SELECT * FROM EmployeeInfo2;")
+
+dbGetQuery(mydb, "DROP TABLE EmployeeInfo;")
+
+dbGetQuery(mydb, "DROP TABLE EmployeeInfo2;")
 ```
 
 # NULL Value
 ```{r}
-#NULL is a state (similar to R), represents the lack of a value. But is not compatible with R backend so this code doesn't work as part of dbGetQuery()
+#NULL is a state (similar to R), represents the lack of a value. But is not compatible with R back end so this code doesn't work as part of dbGetQuery()
 
 #This doesn't work because NULL is not a value
 SELECT * FROM test WHERE score = NULL;
 
 #Instead use
-SELECT * FROM test WHERE score is NULL;
+dbGetQuery(mydb, "SELECT * FROM CountryPopulation  WHERE Country  is NULL;")
 
 ```
 
@@ -210,7 +322,77 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
 #EXERCISE 5
-#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+#Recreate one of your toy data tables with the constraint that for one of the integer variables the default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+
+dbGetQuery(mydb,"CREATE TABLE EmployeeInfo3 (
+  employee TEXT, 
+  salary INTEGER DEFAULT 0,
+  startdate DATE);")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 (employee,salary) Values ('Emma','21000');")
+           
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('Peter','23400','2008-03-02');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 (startdate) Values ('2007-03-14');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 (startdate) Values ('2006-01-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 (startdate,employee) Values ('B','2010-11-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('C','29300','2008-03-02');")
+           
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('D','30000','2007-03-14');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('E','31000','2006-01-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('F','32000','2010-11-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('G','33000','2008-03-02');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('H','34000','2007-03-14');")
+           
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('I','35000','2006-01-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('J','36000','2010-11-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('K','37000','2008-03-02');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('O','38000','2007-03-14');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('Emma','21000','2010-11-01');")
+           
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('Peter','23400','2008-03-02');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('Lucas','26800','2007-03-14');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('A','27800','2006-01-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('B','28600','2010-11-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('C','29300','2008-03-02');")
+           
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('D','30000','2007-03-14');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('E','31000','2006-01-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('F','32000','2010-11-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('G','33000','2008-03-02');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('H','34000','2007-03-14');")
+           
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('I','35000','2006-01-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('J','36000','2010-11-01');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('K','37000','2008-03-02');")
+
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo3 Values ('O','38000','2007-03-14');")
+
+
+dbGetQuery(mydb,"SELECT * FROM EmployeeInfo3;")
+
+dbGetQuery(mydb, "DROP TABLE EmployeeInfo3;")
 
 ```
 
@@ -227,6 +409,13 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+dbGetQuery(mydb, "ALTER TABLE EmployeeInfo2 ADD email INTEGER DEFAULT 3 ")
+
+dbGetQuery(mydb, "SELECT * FROM EmployeeInfo2 LIMIT 10;")
+
+dbGetQuery(mydb, "ALTER TABLE EmployeeInfo2 DROP COLUMN email;")
+
 ```
 
 
@@ -247,6 +436,18 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+
+dbGetQuery(mydb,"CREATE TABLE Customer (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, 
+  age INTEGER, 
+  name TEXT, sex Text
+  );")
+
+dbGetQuery(mydb,"INSERT INTO Customer (age, name,sex) VALUES (20, 'Emma','F');")
+dbGetQuery(mydb,"INSERT INTO Customer (age, name,sex) VALUES (34, 'Peter','M');")
+
+dbGetQuery(mydb, "SELECT * FROM Customer;")
+
 
 ```
 
@@ -278,6 +479,12 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
 
+dbGetQuery(mydb, "SELECT Country FROM CountryPopulation WHERE Population > 200000000 ORDER BY Population DESC;")
+
+dbGetQuery(mydb, "SELECT Country FROM CountryPopulation WHERE Country LIKE '_n%';")
+
+
+
 ```
 
 ## Removing Duplicates
@@ -289,6 +496,9 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
 
+dbGetQuery(mydb, "INSERT INTO EmployeeInfo2 Values ('Emma',21000,'2010-11-01');")
+
+dbGetQuery(mydb, "SELECT DISTINCT employee, salary,startdate FROM EmployeeInfo2;")
 ```
 
 ## Conditional Expressions (non-standard)
@@ -360,21 +570,66 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
 
+dbGetQuery(mydb, "ALTER TABLE EmployeeInfo2 ADD id INTEGER AUTO_INCREMENT PRIMARY KEY;")
+
+dbGetQuery(mydb, "ALTER TABLE CountryPopulation ADD id INTEGER NOT NULL;")
+
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 30 WHERE Country = 'China';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 29 WHERE Country = 'India';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 28 WHERE Country = 'United States';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 27 WHERE Country = 'Indonesia';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 26 WHERE Country = 'Pakistan';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 25 WHERE Country = 'Brazil';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 24 WHERE Country = 'Nigeria';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 23 WHERE Country = 'Bangladesh';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 22 WHERE Country = 'Russia';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 21 WHERE Country = 'Mexico';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 20 WHERE Country = 'Japan';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 19 WHERE Country = 'Ethiopia';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 18 WHERE Country = 'Philippines';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 17 WHERE Country = 'Egypt';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 16 WHERE Country = 'Vietnam,';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 15 WHERE Country = 'A';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 14 WHERE Country = 'B';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 13 WHERE Country = 'C';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 12 WHERE Country = 'D';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 11 WHERE Country = 'E';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 10 WHERE Country = 'F';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 9 WHERE Country = 'G';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 8 WHERE Country = 'H';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 7 WHERE Country = 'R';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 6 WHERE Country = 'M';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 5 WHERE Country = 'J';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 4 WHERE Country = 'O';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 3 WHERE Country = 'P';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 2 WHERE Country = 'Q';")
+dbGetQuery(mydb, "UPDATE CountryPopulation SET id = 1 WHERE Country = 'V';")
+
+dbGetQuery(mydb, "SELECT * FROM EmployeeInfo2;")
+dbGetQuery(mydb, "SELECT * FROM CountryPopulation;")
+
+dbGetQuery(mydb,"SELECT l.employee AS EmployeeInfo2, r.Country AS CountryPopulation 
+           FROM EmployeeInfo2 AS l 
+           JOIN CountryPopulation AS r ON l.id = r.id")
+
+dbGetQuery(mydb,"SELECT l.employee AS EmployeeInfo2, r.Country AS CountryPopulation 
+           FROM EmployeeInfo2 AS l 
+           RIGHT JOIN CountryPopulation AS r ON l.id = r.id")
+
+dbGetQuery(mydb,"SELECT l.employee AS EmployeeInfo2, r.Country AS CountryPopulation 
+           FROM EmployeeInfo2 AS l 
+           LEFT JOIN CountryPopulation AS r ON l.id = r.id")
+
+dbGetQuery(mydb, "SELECT id FROM EmployeeInfo2
+           UNION 
+           SELECT id FROM CountryPopulation;")
+
+dbGetQuery(mydb, "SELECT * FROM EmployeeInfo2
+           UNION 
+           SELECT * FROM CountryPopulation;")
+
 ```
 ```{r}
-#Now disconnect from your database
-dbDisconnect(mydb)
-
-#Then retunr to your AWS console and:
-
-#1. Click on "Actions" and then "Stop"
-#2. Do NOT make a snapshot
-#3 Click on "Actions" again and click "Delete"
-#4. Unclick "Make a final snapshot"
-#5. Clicl "I acknowledge that upon instance deletion, automated backups, including system snapshots and point-in-time recovery, will no longer be available."
-#6. Type "delete me" into the field
-
-#Failure to follow these steps could result in charges to your credit card.
 
 
 ```
