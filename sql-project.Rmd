@@ -1,6 +1,7 @@
 ---
 title: "sql-workshop"
 author: "Charles Lang"
+modified by: "Amanda Oliveira"
 output: html_document
 ---
 
@@ -8,7 +9,8 @@ Before you follow the directions below, please take a screenshot of your AWS con
 
 ## Connect to AWS MySQL Database
 ```{r}
-#install.packages("DBI", "RMySQL")
+# install.packages("DBI")
+# install.packages("RMySQL")
 
 library(DBI)
 library(RMySQL)
@@ -16,7 +18,7 @@ library(RMySQL)
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.cyxqbskvqdbe.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -55,6 +57,20 @@ dbReadTable(mydb, 'studentInfo')
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
 
+#install.packages("stringi")
+library(stringi)
+
+set.seed(7)
+n <- 78
+x <- data.frame("ID" = stri_rand_strings(n, 6), "age" = sample(1:16,n,T), "year" = sample(1990:2020, n, T))
+y <- data.frame("ID"= x$ID, "score"=sample(studentAssessment$score, n, T), "treatment"=sample(c(1, 0), n, TRUE))
+
+dbWriteTable(mydb, "participants", x)
+dbWriteTable(mydb, "ScoresByGroup", y)
+
+
+
+
 ```
 
 ## Getting into SQL - READING
@@ -82,8 +98,10 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
+dbGetQuery(mydb, "SELECT ID AS 'ParticipantID', score FROM ScoresByGroup ORDER BY score DESC LIMIT 20;")
 
 #Read the other table according to a condition of one of the variables.
+dbGetQuery(mydb, "SELECT * FROM participants WHERE age>12 ORDER BY age;")
 
 ```
 
@@ -123,6 +141,17 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
+dbListTables(mydb)
+
+dbGetQuery(mydb, "SELECT * FROM participants;")
+dbGetQuery(mydb, "INSERT INTO participants (age, year) VALUES ('32', '2021'); ")
+dbGetQuery(mydb, "SELECT * FROM participants ORDER BY ID")
+dbGetQuery(mydb, "DELETE FROM participants WHERE age=32")
+
+dbGetQuery(mydb, "SELECT * FROM ScoresByGroup")
+dbGetQuery(mydb, "UPDATE ScoresByGroup SET score=78 WHERE row_names=1;")
+dbGetQuery(mydb, "SELECT * FROM ScoresByGroup")
+dbGetQuery(mydb, "DELETE FROM ScoresByGroup WHERE row_names=1;")
 
 ```
 
@@ -159,6 +188,19 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
 
+dbGetQuery(mydb, "SELECT * FROM ScoresByGroup")
+
+dbGetQuery(mydb,"CREATE TABLE ScoresByGroup_2 (
+  ID TEXT,
+  score INTEGER, 
+  treatment INTEGER
+  );")
+
+dbGetQuery(mydb, "INSERT INTO ScoresByGroup_2 (ID, score, treatment) SELECT ID, score, treatment FROM ScoresByGroup;")
+dbGetQuery(mydb, "SELECT * FROM ScoresByGroup_2" )
+dbGetQuery(mydb, "DROP TABLE IF EXISTS ScoresByGroup ;") 
+
+
 ```
 
 # NULL Value
@@ -180,6 +222,8 @@ dbGetQuery(mydb,"CREATE TABLE test2 (
   score INTEGER, 
   student TEXT NOT NULL
   );")
+
+dbGetQuery(mydb,"INSERT INTO test2 (student) VALUES (NULL);")
 
 dbGetQuery(mydb, "DROP TABLE IF EXISTS test2;")
 
@@ -209,8 +253,25 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES ('1', 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
+dbGetQuery(mydb, "SELECT * FROM test2")
+
 #EXERCISE 5
-#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+#Recreate one of your toy data tables with the constraint that for one of the integer variables the default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+
+dbListTables(mydb)
+
+dbGetQuery(mydb, "SELECT * FROM participants;")
+
+dbGetQuery(mydb,"CREATE TABLE participants_2 (
+      ID TEXT, 
+      age INTEGER DEFAULT 0, 
+      year INTEGER 
+      );")
+dbGetQuery(mydb, "INSERT INTO participants_2 (ID, age, year) SELECT ID, age, year FROM participants;")
+dbGetQuery(mydb, "INSERT INTO participants_2 (ID, year) VALUES('a', 1990);")
+dbGetQuery(mydb, "SELECT * FROM participants_2 ORDER BY age")
+dbGetQuery(mydb, "DROP TABLE IF EXISTS participants_2;")
+
 
 ```
 
@@ -227,6 +288,14 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+dbListTables(mydb)
+dbGetQuery(mydb, "SELECT * FROM participants;")
+dbGetQuery(mydb, "ALTER TABLE participants ADD projectnumber INTEGER DEFAULT 3")
+dbGetQuery(mydb, "SELECT * FROM participants;")
+dbGetQuery(mydb, "ALTER TABLE participants DROP COLUMN projectnumber")
+dbGetQuery(mydb, "SELECT * FROM participants;")
+
 ```
 
 
@@ -247,6 +316,16 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+dbListTables(mydb)
+dbGetQuery(mydb, "CREATE TABLE treatment ( 
+           numID INTEGER AUTO_INCREMENT PRIMARY KEY,
+           treatment INTEGER, 
+           score INTEGER, 
+           ID TEXT 
+           );")
+
+dbGetQuery(mydb, "INSERT INTO treatment (treatment, score, ID) VALUES (1, 46, 'abcdef');")
+dbGetQuery(mydb, "SELECT * FROM treatment;")
 
 ```
 
@@ -277,6 +356,9 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
+dbListTables(mydb)
+dbGetQuery(mydb, "SELECT * FROM participants")
+dbGetQuery(mydb, "SELECT * FROM participants WHERE age<15 AND ID LIKE '_y%';")
 
 ```
 
@@ -288,6 +370,11 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+dbGetQuery(mydb, "SELECT * FROM participants")
+dbGetQuery(mydb, "INSERT INTO participants (ID, age, year) VALUES ('zO74Fn', 1, 2008);")
+dbGetQuery(mydb, "SELECT ID FROM participants WHERE age<2 AND ID LIKE '_o%';")
+dbGetQuery(mydb, "SELECT DISTINCT ID FROM participants WHERE age<2 AND ID LIKE '_o%';")
+
 
 ```
 
@@ -306,6 +393,7 @@ dbGetQuery(mydb,"SELECT
   CASE a WHEN 1 THEN 'true' ELSE 'false' END as boolA,
   CASE b WHEN 1 THEN 'true' ELSE 'false' END as boolB
   FROM booltest")
+
 ```
 
 #Relationships (JOIN) - *Slide*
@@ -359,19 +447,25 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
+dbListTables(mydb)
+dbGetQuery(mydb, "SELECT * FROM participants;")
+dbGetQuery(mydb, "SELECT * FROM ScoresByGroup_2;")
+dbGetQuery(mydb,"SELECT *
+           FROM participants AS l 
+           LEFT JOIN ScoresByGroup_2 AS r ON l.ID = r.ID")
 
 ```
 ```{r}
 #Now disconnect from your database
 dbDisconnect(mydb)
 
-#Then retunr to your AWS console and:
+#Then return to your AWS console and:
 
 #1. Click on "Actions" and then "Stop"
 #2. Do NOT make a snapshot
 #3 Click on "Actions" again and click "Delete"
 #4. Unclick "Make a final snapshot"
-#5. Clicl "I acknowledge that upon instance deletion, automated backups, including system snapshots and point-in-time recovery, will no longer be available."
+#5. Click "I acknowledge that upon instance deletion, automated backups, including system snapshots and point-in-time recovery, will no longer be available."
 #6. Type "delete me" into the field
 
 #Failure to follow these steps could result in charges to your credit card.
