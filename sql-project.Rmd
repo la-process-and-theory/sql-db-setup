@@ -1,6 +1,7 @@
 ---
 title: "sql-workshop"
 author: "Charles Lang"
+author: "Yunzhao Wu"
 output: html_document
 ---
 
@@ -8,7 +9,8 @@ Before you follow the directions below, please take a screenshot of your AWS con
 
 ## Connect to AWS MySQL Database
 ```{r}
-#install.packages("DBI", "RMySQL")
+install.packages("DBI")
+install.packages("RMySQL")
 
 library(DBI)
 library(RMySQL)
@@ -16,7 +18,7 @@ library(RMySQL)
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.cjv1qyptx4ll.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -57,6 +59,35 @@ dbReadTable(mydb, 'studentInfo')
 
 ```
 
+```{r}
+#Exercise 1 Answer
+v1 <- sample(1:50, 40)
+v1
+v2 <- sample(50:100, 40)
+v2
+v3 <- sample(LETTERS, 40, replace = TRUE)
+v3
+
+toy_data_set <- data.frame(v1, v2, v3)
+
+dbWriteTable(mydb, "toy_data_set", toy_data_set)
+
+#----------------------------------------------------------------
+
+v4 <- sample(100:150, 40)
+v4
+v5 <- sample(150:200, 40)
+v5
+v6 <- sample(LETTERS, 40, replace = TRUE)
+v6
+
+toy_data_set2 <- data.frame(v4, v5, v6)
+
+dbWriteTable(mydb, "toy_data_set2", toy_data_set2)
+
+```
+
+
 ## Getting into SQL - READING
 ```{r}
 #Query a portion of the database (always returns dataframe)
@@ -81,11 +112,22 @@ dbGetQuery(mydb, "SELECT COUNT(score) FROM studentAssessment WHERE score > 50;")
 dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id_assessment = '1752';")
 
 #EXERCISE 2
-#Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
+#1. Read one of your toy data tables, make sure the output is ordered in descending order
+#2. rename one of the variables and the output is limited to the first 20 rows.
 
 #Read the other table according to a condition of one of the variables.
 
 ```
+
+```{r}
+#Exercise 2 Answer
+
+dbGetQuery(mydb, "SELECT v1 as v_one, V2, V3 FROM toy_data_set ORDER BY v1 DESC LIMIT 20;")
+
+dbGetQuery(mydb, "SELECT v4 as v_four, v5, v6 FROM toy_data_set2 ORDER BY v4 DESC LIMIT 20;")
+
+```
+
 
 ## Getting into SQL - UPDATING
 ```{r}
@@ -126,6 +168,29 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 
 ```
 
+```{r}
+#Exercise 3 Answer
+
+dbGetQuery(mydb, "SELECT COUNT(*) FROM toy_data_set;")
+
+#Insert a new row & leaving one variable empty
+dbGetQuery(mydb, "INSERT INTO toy_data_set(v1, v2) VALUES('aa', 'bb');")
+
+dbGetQuery(mydb, "SELECT COUNT(*) FROM toy_data_set;")
+
+#Change one value in the other table
+dbGetQuery(mydb, "UPDATE toy_data_set2 SET v4 = '111' WHERE v6 = 'U';")
+
+dbGetQuery(mydb, "SELECT COUNT(*) FROM toy_data_set2;")
+
+#Delete the row edited and the row inserted
+dbGetQuery(mydb, "DELETE FROM toy_data_set WHERE v1='aa';")
+
+dbGetQuery(mydb, "DELETE FROM toy_data_set2 WHERE v4='111' and v6='U';")
+
+```
+
+
 ## Add/Deleting Table
 ```{r}
 #Creating a new table in SQL
@@ -161,15 +226,39 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 
 ```
 
+```{r}
+#Exercise 4 Answer
+
+#create new table
+dbGetQuery(mydb, "CREATE TABLE toy_data_set1 (
+           v1 INTEGER,
+           v2 INTEGER,
+           v3 VARCHAR(30)
+);")
+
+#insert values to new table from previous one
+dbGetQuery(mydb, "INSERT INTO toy_data_set1(v1, v2, v3) SELECT v1, v2, v3 FROM toy_data_set;")
+
+#check new table
+dbGetQuery(mydb, "SELECT * FROM toy_data_set1;" )
+
+#delete original table
+dbGetQuery(mydb, "DROP TABLE toy_data_set;")
+
+#check delete
+dbGetQuery(mydb, "DROP TABLE IF EXISTS toy_data_set;")
+```
+
+
 # NULL Value
 ```{r}
 #NULL is a state (similar to R), represents the lack of a value. But is not compatible with R backend so this code doesn't work as part of dbGetQuery()
 
 #This doesn't work because NULL is not a value
-SELECT * FROM test WHERE score = NULL;
+#SELECT * FROM test WHERE score = NULL;
 
 #Instead use
-SELECT * FROM test WHERE score is NULL;
+#SELECT * FROM test WHERE score is NULL;
 
 ```
 
@@ -203,14 +292,41 @@ dbGetQuery(mydb,"CREATE TABLE test2 (
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES ('1', 'A');")
 
 #Error because of unique
-dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES ('1', 'A');")
+#dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES ('1', 'A');")
 
 #NULL is exempt
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
 #EXERCISE 5
-#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+#Recreate one of your toy data tables with the constraint that for one of the integer variables the default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+
+```
+```{r}
+#Exercise 5 Answer
+
+#recreate table 
+dbGetQuery(mydb, "CREATE TABLE toy_data_set3 (
+           v1 INTEGER,
+           v2 INTEGER DEFAULT 0,
+           v3 TEXT
+);")
+
+#insert values to new table from previous one
+dbGetQuery(mydb, "INSERT INTO toy_data_set3(v1, v2, v3) SELECT v1, v2, v3 FROM toy_data_set1;")
+
+#check new table
+dbGetQuery(mydb, "SELECT * FROM toy_data_set3;")
+
+#insert some empty values
+dbGetQuery(mydb, "INSERT INTO toy_data_set3() VALUES();")
+dbGetQuery(mydb, "INSERT INTO toy_data_set3() VALUES();")
+
+#display new table
+dbGetQuery(mydb, "SELECT * FROM toy_data_set3;")
+
+#delete
+dbGetQuery(mydb, "DROP TABLE IF EXISTS toy_data_set3;")
 
 ```
 
@@ -227,6 +343,19 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+```
+
+```{r}
+#Exercise 6 answer
+
+#ADD A COLUMN
+dbGetQuery(mydb, "ALTER TABLE toy_data_set2 ADD home INTEGER DEFAULT 3;")
+
+#display table
+dbGetQuery(mydb, "SELECT * FROM toy_data_set2;")
+
+#delete the column
+dbGetQuery(mydb, "ALTER TABLE toy_data_set2 DROP COLUMN home;")
 ```
 
 
@@ -249,6 +378,32 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 #Create a new table with four variables and a primary key that is a sequential id value.
 
 ```
+
+```{r}
+#Exercise 7 answer
+
+#create new table
+dbGetQuery(mydb, "CREATE TABLE toy_data_set4 (
+           id INTEGER AUTO_INCREMENT PRIMARY KEY,
+           v1 INTEGER,
+           v2 INTEGER,
+           v3 TEXT
+);")
+
+#check new table 
+dbGetQuery(mydb, "SELECT * FROM toy_data_set4;")
+
+#insert values
+dbGetQuery(mydb, "INSERT INTO toy_data_set4(id, v1, v2, v3) values(1, 2, 3, 'A');")
+dbGetQuery(mydb, "INSERT INTO toy_data_set4(id, v1, v2, v3) values(4, 5, 6, 'B');")
+dbGetQuery(mydb, "INSERT INTO toy_data_set4(id, v1, v2, v3) values(7, 8, 9, 'C');")
+dbGetQuery(mydb, "INSERT INTO toy_data_set4(id, v1, v2, v3) values(10, 11, 12, 'B');")
+
+#check new table 
+dbGetQuery(mydb, "SELECT * FROM toy_data_set4;")
+
+```
+
 
 ## Filtering (WHERE)
 ```{r}
@@ -280,6 +435,16 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 
 ```
 
+```{r}
+#Exercise 8 answer
+
+dbGetQuery(mydb, "SELECT v4, v5 FROM toy_data_set2 WHERE v4 > 120 OR v5 < 170 ORDER BY v4 DESC;")
+
+dbGetQuery(mydb, "SELECT v5, v6 FROM toy_data_set2 WHERE v5 < 180 AND v6 = 'R';")
+
+```
+
+
 ## Removing Duplicates
 ```{r}
 dbGetQuery(mydb, "SELECT DISTINCT region FROM studentInfo;")
@@ -290,6 +455,24 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
 
 ```
+
+```{r}
+#Exercise 9 answer
+
+#check dataset
+dbGetQuery(mydb, "SELECT * FROM toy_data_set2;")
+
+#insert rows
+dbGetQuery(mydb, "INSERT INTO toy_data_set2(v4, v5, v6) SELECT v4, v5, v6 FROM toy_data_set2 WHERE v6='R';")
+
+#check dataset again
+dbGetQuery(mydb, "SELECT * FROM toy_data_set2;")
+
+#query table without duplicate rows
+dbGetQuery(mydb, "SELECT DISTINCT v6 FROM toy_data_set2;")
+
+```
+
 
 ## Conditional Expressions (non-standard)
 ```{r}
@@ -341,7 +524,7 @@ dbGetQuery(mydb, "SELECT * FROM right_table;")
 
 dbGetQuery(mydb,"SELECT l.description AS left_table, r.description AS right_table 
            FROM left_table AS l 
-           JOIN right_table AS r ON l.id = r.id")
+           JOIN right_table AS r ON l.id = r.id") 
 
 dbGetQuery(mydb,"SELECT l.description AS left_table, r.description AS right_table 
            FROM left_table AS l 
@@ -361,6 +544,45 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
 
 ```
+
+```{r}
+#Exercise 10 Answer
+
+#Create id variable in two data tables
+dbGetQuery(mydb, "DROP TABLE IF EXISTS toy_data_set;")
+dbGetQuery(mydb, "DROP TABLE IF EXISTS toy_data_set2;")
+
+v1 <- sample(1:50, 40)
+v2 <- sample(50:100, 40)
+v3 <- sample(LETTERS, 40, replace = TRUE)
+id <-c(1:40)
+
+toy_data_set <- data.frame(v1, v2, v3, id)
+
+dbWriteTable(mydb, "toy_data_set", toy_data_set)
+
+dbGetQuery(mydb, "SELECT * FROM toy_data_set;")
+#----------------------------------------------------------------
+
+v4 <- sample(100:150, 40)
+v5 <- sample(150:200, 40)
+v6 <- sample(LETTERS, 40, replace = TRUE)
+id <- c(21:60)
+
+toy_data_set2 <- data.frame(v4, v5, v6, id)
+
+dbWriteTable(mydb, "toy_data_set2", toy_data_set2)
+
+dbGetQuery(mydb, "SELECT * FROM toy_data_set2;")
+
+#join tables
+
+dbGetQuery(mydb, "SELECT l.*, r.* FROM toy_data_set l JOIN toy_data_set2 r
+           ON l.id = r.id;")
+
+```
+
+
 ```{r}
 #Now disconnect from your database
 dbDisconnect(mydb)
