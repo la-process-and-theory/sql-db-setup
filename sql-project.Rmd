@@ -314,6 +314,21 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+
+
+# add coolumn with default value 
+dbGetQuery(mydb, "ALTER TABLE studentSES ADD region INTEGER DEFAULT 3") 
+
+# view new column 
+dbGetQuery(mydb, "SELECT * FROM studentSES LIMIT 10;") 
+
+# delete new column 
+dbGetQuery(mydb, "ALTER TABLE studentSES DROP COLUMN region;") 
+
+# view again to confirm drop 
+dbGetQuery(mydb, "SELECT * FROM studentSES LIMIT 10;") 
+
 ```
 
 
