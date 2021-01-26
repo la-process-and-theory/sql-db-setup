@@ -111,7 +111,6 @@ dbGetQuery(mydb, "SELECT test_scores AS 'Scores' FROM testScores ORDER BY test_s
 
 #Read the other table according to a condition of one of the variables.
 
-
 dbGetQuery(mydb, "SELECT COUNT(*) FROM studentSES WHERE student_ses = 'average';") 
 
 
@@ -412,7 +411,10 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
 
-db
+dbGetQuery(mydb, "SELECT * FROM testScores LIMIT 10;") 
+
+dbGetQuery(mydb, "SELECT test_scores, studentNumber FROM testScores WHERE courses LIKE 'c%' AND
+           studentNumber LIKE 'a%';") 
 
 
 
