@@ -177,19 +177,8 @@ dbGetQuery(mydb,"CREATE TABLE df3 (
   number2 INTEGER,
   character1 TEXT
   );")
-dbGetQuery(mydb,"
-BEGIN
-  DECLARE i INT;
-  SET i = 0;
-    lp : LOOP                               　　　
-        INSERT INTO df3 VALUES(i+1,i+31,'a');　　
-        SET i = i + 1;                      　　　　
-        IF i > 29 THEN                   　　　　
-                    LEAVE lp;
-            END IF;
-    END LOOP;
-    SELECT * FROM df3;
-END;")
+dbGetQuery(mydb,"INSERT INTO df3(number1, number2, character1) SELECT number1, number2, character1 FROM df1;")
+dbGetQuery(mydb,"SELECT * FROM df3;")
 dbGetQuery(mydb, "DROP TABLE df1;")
 ```
 
@@ -266,10 +255,10 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
-dbGetQuery(mydb, "ALTER TABLE df1 ADD number3 INTEGER DEFAULT 3 ")
+dbGetQuery(mydb, "ALTER TABLE df3 ADD number3 INTEGER DEFAULT 3 ")
 
-dbGetQuery(mydb, "SELECT * FROM df1;")
-dbGetQuery(mydb, "ALTER TABLE df1 DROP COLUMN number3;")
+dbGetQuery(mydb, "SELECT * FROM df3;")
+dbGetQuery(mydb, "ALTER TABLE df3 DROP COLUMN number3;")
 ```
 
 
@@ -298,7 +287,7 @@ dbGetQuery(mydb,"CREATE TABLE df5 (
   number3 INTEGER
   );")
 dbGetQuery(mydb,"INSERT INTO df5 (number1, character1, number2, number3) VALUES (1, 'A', 2, 3);")
-dbGetQuery(mydb, "SELECT * FROM df5;")
+dbGetQuery(mydb,"SELECT * FROM df5;")
 ```
 
 ## Filtering (WHERE)
@@ -328,7 +317,7 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
-dbGetQuery(mydb, "SELECT number1, number2 FROM df1 WHERE number1 > 3 AND number2 < 40 ORDER BY number1 DESC;")
+dbGetQuery(mydb, "SELECT number1, number2 FROM df3 WHERE number1 > 3 AND number2 < 40 ORDER BY number1 DESC;")
 ```
 
 ## Removing Duplicates
@@ -339,9 +328,9 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
-dbGetQuery(mydb,"INSERT INTO df1 (row_names, number1, character1, number2) VALUES ('1', 1, 'a', 31);")
-dbGetQuery(mydb, "SELECT * FROM df1;")
-dbGetQuery(mydb, "SELECT DISTINCT * FROM df1;")
+dbGetQuery(mydb,"INSERT INTO df3 (row_names, number1, character1, number2) VALUES ('1', 1, 'a', 31);")
+dbGetQuery(mydb, "SELECT * FROM df3;")
+dbGetQuery(mydb, "SELECT DISTINCT * FROM df3;")
 ```
 
 ## Conditional Expressions (non-standard)
@@ -412,8 +401,8 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
-dbGetQuery(mydb,"SELECT l.number1 AS df1, r.number1 AS df2 
-           FROM df1 AS l
+dbGetQuery(mydb,"SELECT l.number1 AS df3, r.number1 AS df2
+           FROM df3 AS l
            JOIN df2 AS r ON l.number2 = r.number2")
 ```
 
