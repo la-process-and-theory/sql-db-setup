@@ -60,13 +60,17 @@ dbReadTable(mydb, 'studentInfo')
 # Table 1 - student test scores 
 studentNumber <- paste(letters, 1:40, sep = "") 
 test_scores <- rnorm(40, mean = 85, sd = 5) 
-testScores <- data.frame(cbind(studentNumber, test_scores))
-
+course_title <- c("Calculus", "Physics", "Social Studies", "History", "Biology")
+courses <- sample(course_title, size = 40, replace = TRUE)
+testScores <- data.frame(cbind(studentNumber, test_scores, courses))
+head(testScores)
 # Table 2 - student Soc.Econ.Status 
 
 student_ses <- sample(c("below average", "average", "above average"), 40, replace = TRUE)
-studentSES <- data.frame(cbind(studentNumber, student_ses))
-View(studentSES)
+region_names <- c("South Coast", "New Seattle", "Kantucky", "Texico")
+regions <- sample(region_names, size = 40, replace = TRUE) 
+studentSES <- data.frame(cbind(studentNumber, student_ses, regions))
+
 
 # Write new tables to DB 
 dbWriteTable(mydb, 'testScores', testScores)
@@ -362,7 +366,7 @@ dbGetQuery(mydb,"CREATE TABLE studentMajors (
 
 dbGetQuery(mydb, "INSERT INTO studentMajors (major, code, school, campus) VALUES ('History', 1, 'JFK School of Government', 'North');") 
 dbGetQuery(mydb, "INSERT INTO studentMajors (major, code, school, campus) VALUES ('Engineering', 2, 'School of Engineering', 'North');") 
-dbGetQuery(mydb, "INSERT INTO studentMajors (major, code, school, campus) VALUES ('Biology', 3, 'Jane Austen Academy', 'Central');") 
+dbGetQuery(mydb, "INSERT INTO studentMajors (major, code, school, campus) VALUES ('Biology', 3, 'Jane Goodall Academy', 'Central');") 
 dbGetQuery(mydb, "INSERT INTO studentMajors (major, code, school, campus) VALUES ('Music Theory', 4, 'Central University Conservatory', 'Central');") 
 
 
@@ -386,6 +390,7 @@ dbGetQuery(mydb, "SELECT id_student, date_submitted FROM studentAssessment WHERE
 #OR Statement
 dbGetQuery(mydb, "SELECT id_student, date_submitted FROM studentAssessment WHERE date_submitted > 550 OR date_submitted < 2 ORDER BY date_submitted DESC;")
 
+
 #AND Statement
 dbGetQuery(mydb, "SELECT id_student, date_submitted FROM studentAssessment WHERE date_submitted > 550 AND id_student = 325750 ORDER BY date_submitted DESC;")
 
@@ -406,6 +411,10 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
+
+db
+
+
 
 ```
 
