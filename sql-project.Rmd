@@ -416,6 +416,8 @@ dbGetQuery(mydb, "SELECT * FROM testScores LIMIT 10;")
 dbGetQuery(mydb, "SELECT test_scores, studentNumber FROM testScores WHERE courses LIKE 'c%' AND
            studentNumber LIKE 'a%';") 
 
+dbGetQuery(mydb, "SELECT studentNumber, test_scores, courses FROM testScores WHERE test_scores > 85 ORDER BY test_scores DESC;")
+
 
 
 ```
@@ -428,6 +430,16 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+
+
+# insert duplicate 
+dbGetQuery(mydb, "INSERT INTO studentSES (studentNumber, student_ses, regions) VALUES ('a1', 'below average', 'Kantucky');") 
+
+# query without duplicate 
+
+dbGetQuery(mydb, "SELECT DISTINCT studentNumber, student_ses, regions FROM studentSES;")
+
+
 
 ```
 
