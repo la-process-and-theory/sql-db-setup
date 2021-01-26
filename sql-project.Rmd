@@ -6,6 +6,7 @@ output: html_document
 
 Before you follow the directions below, please take a screenshot of your AWS console showing the running database and upload it to your repo.
 
+
 ## Connect to AWS MySQL Database
 ```{r}
 #install.packages("DBI", "RMySQL")
@@ -16,7 +17,7 @@ library(RMySQL)
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.c4tfqpjsbneq.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -52,8 +53,30 @@ dbListTables(mydb)
 #Read a particular table
 dbReadTable(mydb, 'studentInfo')
 
+
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
+
+# Table 1 - student test scores 
+studentNumber <- paste(letters, 1:40, sep = "") 
+test_scores <- rnorm(40, mean = 85, sd = 5) 
+course_title <- c("Calculus", "Physics", "Social Studies", "History", "Biology")
+courses <- sample(course_title, size = 40, replace = TRUE)
+testScores <- data.frame(cbind(studentNumber, test_scores, courses))
+head(testScores)
+# Table 2 - student Soc.Econ.Status 
+
+student_ses <- sample(c("below average", "average", "above average"), 40, replace = TRUE)
+region_names <- c("South Coast", "New Seattle", "Kantucky", "Texico")
+regions <- sample(region_names, size = 40, replace = TRUE) 
+studentSES <- data.frame(cbind(studentNumber, student_ses, regions))
+
+
+# Write new tables to DB 
+dbWriteTable(mydb, 'testScores', testScores)
+dbWriteTable(mydb, 'studentSES', studentSES)
+
+
 
 ```
 
@@ -83,7 +106,13 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
 
+dbGetQuery(mydb, "SELECT test_scores AS 'Scores' FROM testScores ORDER BY test_scores DESC LIMIT 20;")
+
+
 #Read the other table according to a condition of one of the variables.
+
+dbGetQuery(mydb, "SELECT COUNT(*) FROM studentSES WHERE student_ses = 'average';") 
+
 
 ```
 
@@ -124,6 +153,25 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
 
+dbGetQuery(mydb, "SELECT * FROM testScores LIMIT 10;")
+
+dbGetQuery(mydb, "INSERT INTO testScores(studentNumber, test_scores) VALUES  ('aaa1', '0');") 
+dbGetQuery(mydb, "UPDATE testScores SET test_scores = 'NULL' WHERE studentNumber = 'aaa1';")
+dbGetQuery(mydb, "SELECT * FROM testScores WHERE studentNumber = 'aaa1';")
+
+dbGetQuery(mydb, "SELECT * FROM studentSES LIMIT 10;") 
+
+dbGetQuery(mydb, "UPDATE studentSES SET student_ses = 'above average' WHERE studentNumber = 'c3';")
+dbGetQuery(mydb, "SELECT * FROM studentSES WHERE studentNumber = 'c3';")
+
+
+# delete the row I inserted in testScores 
+
+dbGetQuery(mydb, "DELETE FROM testScores WHERE studentNumber = 'aaa1';")
+
+# delete the row I edited in studentSES
+dbGetQuery(mydb, "DELETE FROM studentSES WHERE studentNumber = 'c3';")
+
 ```
 
 ## Add/Deleting Table
@@ -134,6 +182,7 @@ dbGetQuery(mydb,"CREATE TABLE test (
   student TEXT
   );")
 
+# shows all tables in SQL database 
 dbListTables(mydb)
 
 #Inserting data into the table
@@ -158,8 +207,24 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
+head(testScores)
+
+
+dbGetQuery(mydb, "CREATE TABLE scores (studentNumber TEXT, test_scores INTEGER );" ) 
+
+dbGetQuery(mydb,"INSERT INTO scores (studentNumber, test_scores) SELECT studentNumber, test_scores FROM testScores;")     
+
+dbListTables(mydb)
+dbGetQuery(mydb,"SELECT * FROM scores; " ) 
+
+# delete original table 
+
+dbGetQuery(mydb,"DROP TABLE testScores;") 
+dbListTables(mydb)
+         
 
 ```
+
 
 # NULL Value
 ```{r}
@@ -208,9 +273,34 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES ('1', 'A');")
 #NULL is exempt
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
+dbGetQuery(mydb, "SELECT * FROM test2;") 
+dbListTables(mydb)
 
 #EXERCISE 5
 #Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+
+head(testScores)
+
+
+dbGetQuery(mydb,"CREATE TABLE scores2 (
+   studentNumber TEXT,
+   test_scores INTEGER DEFAULT 0
+   );")
+
+dbListTables(mydb)
+
+dbGetQuery(mydb,"INSERT INTO scores2 (studentNumber, test_scores) VALUES (NULL, 80 );")
+dbGetQuery(mydb,"INSERT INTO scores2 (studentNumber, test_scores) VALUES ('Reginald', NULL );")
+
+# display new table 
+dbGetQuery(mydb, "SELECT * FROM scores2 ; ") 
+
+# delete new table
+
+dbGetQuery(mydb, "DROP TABLE IF EXISTS scores2; ") 
+dbListTables(mydb) 
+
+
 
 ```
 
@@ -227,6 +317,21 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+
+
+# add column with default value 
+dbGetQuery(mydb, "ALTER TABLE studentSES ADD region INTEGER DEFAULT 3") 
+
+# view new column 
+dbGetQuery(mydb, "SELECT * FROM studentSES LIMIT 10;") 
+
+# delete new column 
+dbGetQuery(mydb, "ALTER TABLE studentSES DROP COLUMN region;") 
+
+# view again to confirm drop 
+dbGetQuery(mydb, "SELECT * FROM studentSES LIMIT 10;") 
+
 ```
 
 
@@ -238,6 +343,7 @@ dbGetQuery(mydb,"CREATE TABLE test3 (
   student TEXT
   );")
 
+
 dbGetQuery(mydb,"INSERT INTO test3 (score, student) VALUES (1, 'A');")
 dbGetQuery(mydb,"INSERT INTO test3 (score, student) VALUES (5, 'B');")
 
@@ -248,6 +354,32 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
 
+dbGetQuery(mydb,"CREATE TABLE studentMajors (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, 
+  major TEXT, 
+  code INTEGER, 
+  school TEXT, 
+  campus TEXT
+  );")
+
+
+dbGetQuery(mydb, "INSERT INTO studentMajors (major, code, school, campus) VALUES ('History', 1, 'JFK School of Government', 'North');") 
+dbGetQuery(mydb, "INSERT INTO studentMajors (major, code, school, campus) VALUES ('Engineering', 2, 'School of Engineering', 'North');") 
+dbGetQuery(mydb, "INSERT INTO studentMajors (major, code, school, campus) VALUES ('Biology', 3, 'Jane Goodall Academy', 'Central');") 
+dbGetQuery(mydb, "INSERT INTO studentMajors (major, code, school, campus) VALUES ('Music Theory', 4, 'Central University Conservatory', 'Central');") 
+
+
+# view new table 
+dbGetQuery(mydb, "SELECT * FROM studentMajors;") 
+
+
+# delete new table 
+dbGetQuery(mydb, "DROP TABLE IF EXISTS studentMajors;")
+
+
+
+
+
 ```
 
 ## Filtering (WHERE)
@@ -256,6 +388,7 @@ dbGetQuery(mydb, "SELECT id_student, date_submitted FROM studentAssessment WHERE
 
 #OR Statement
 dbGetQuery(mydb, "SELECT id_student, date_submitted FROM studentAssessment WHERE date_submitted > 550 OR date_submitted < 2 ORDER BY date_submitted DESC;")
+
 
 #AND Statement
 dbGetQuery(mydb, "SELECT id_student, date_submitted FROM studentAssessment WHERE date_submitted > 550 AND id_student = 325750 ORDER BY date_submitted DESC;")
@@ -278,6 +411,15 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
 
+dbGetQuery(mydb, "SELECT * FROM testScores LIMIT 10;") 
+
+dbGetQuery(mydb, "SELECT test_scores, studentNumber FROM testScores WHERE courses LIKE 'c%' AND
+           studentNumber LIKE 'a%';") 
+
+dbGetQuery(mydb, "SELECT studentNumber, test_scores, courses FROM testScores WHERE test_scores > 85 ORDER BY test_scores DESC;")
+
+
+
 ```
 
 ## Removing Duplicates
@@ -288,6 +430,16 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+
+
+# insert duplicate 
+dbGetQuery(mydb, "INSERT INTO studentSES (studentNumber, student_ses, regions) VALUES ('a1', 'below average', 'Kantucky');") 
+
+# query without duplicate 
+
+dbGetQuery(mydb, "SELECT DISTINCT studentNumber, student_ses, regions FROM studentSES;")
+
+
 
 ```
 
@@ -359,6 +511,37 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
+
+dbListTables(mydb)
+
+# add new field and values to first toy table
+dbGetQuery(mydb, "ALTER TABLE testScores ADD school_name TEXT;")
+dbGetQuery(mydb, "UPDATE testScores SET school_name = 'Zakopane' WHERE courses LIKE 'C%';") 
+dbGetQuery(mydb, "UPDATE testScores SET school_name = 'Zakopane' WHERE courses LIKE 'B%';") 
+
+
+# add new field and columns to second toy table 
+
+dbGetQuery(mydb, "ALTER TABLE studentSES ADD school_name TEXT;") 
+dbGetQuery(mydb, "UPDATE studentSES SET school_name = 'Zakopane' WHERE regions LIKE '_a%';") 
+dbGetQuery(mydb, "UPDATE studentSES SET school_name = 'Milec Liceum' WHERE regions LIKE 'N%';") 
+
+# view new additions to tables 
+
+dbGetQuery(mydb, "SELECT * FROM studentSES LIMIT 10;") 
+dbGetQuery(mydb, "SELECT * FROM testScores LIMIT 10;") 
+ 
+
+# select all rows from testScores and only those schools named 'Zakopane' from studentSES 
+
+
+dbGetQuery(mydb, "SELECT *
+           FROM testScores
+           LEFT JOIN studentSES
+           ON testScores.school_name = studentSES.school_name;") 
+
+    
+
 
 ```
 ```{r}
