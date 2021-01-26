@@ -340,6 +340,7 @@ dbGetQuery(mydb,"CREATE TABLE test3 (
   student TEXT
   );")
 
+
 dbGetQuery(mydb,"INSERT INTO test3 (score, student) VALUES (1, 'A');")
 dbGetQuery(mydb,"INSERT INTO test3 (score, student) VALUES (5, 'B');")
 
@@ -349,6 +350,32 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+
+dbGetQuery(mydb,"CREATE TABLE studentMajors (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, 
+  major TEXT, 
+  code INTEGER, 
+  school TEXT, 
+  campus TEXT
+  );")
+
+
+dbGetQuery(mydb, "INSERT INTO studentMajors (major, code, school, campus) VALUES ('History', 1, 'JFK School of Government', 'North');") 
+dbGetQuery(mydb, "INSERT INTO studentMajors (major, code, school, campus) VALUES ('Engineering', 2, 'School of Engineering', 'North');") 
+dbGetQuery(mydb, "INSERT INTO studentMajors (major, code, school, campus) VALUES ('Biology', 3, 'Jane Austen Academy', 'Central');") 
+dbGetQuery(mydb, "INSERT INTO studentMajors (major, code, school, campus) VALUES ('Music Theory', 4, 'Central University Conservatory', 'Central');") 
+
+
+# view new table 
+dbGetQuery(mydb, "SELECT * FROM studentMajors;") 
+
+
+# delete new table 
+dbGetQuery(mydb, "DROP TABLE IF EXISTS studentMajors;")
+
+
+
+
 
 ```
 
