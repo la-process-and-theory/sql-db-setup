@@ -1,6 +1,6 @@
 ---
 title: "sql-workshop"
-author: "Charles Lang"
+author: "Yilin Lu"
 output: html_document
 ---
 
@@ -55,6 +55,29 @@ dbReadTable(mydb, 'studentInfo')
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
 
+# 1) Connect to AWS MySQL database
+library(DBI)
+library(RMySQL)
+
+db_user <- 'admin'
+db_password <- 'testsql!'
+db_name <- 'musicdb'
+db_host <- 'database-project1.cwiivhq5gfpy.us-east-2.rds.amazonaws.com'
+db_port <- 3306
+
+db1 <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
+
+summary(db1)
+
+# 2) Load music data 
+albums = read.csv("albums.csv", header = TRUE)
+artists = read.csv("artists.csv", header = TRUE)
+
+# 3) Write data to the db1
+dbWriteTable(db1, "albums", albums)
+dbWriteTable(db1, "artists", artists)
+dbListTables(db1)
+
 ```
 
 ## Getting into SQL - READING
@@ -84,6 +107,12 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
 
 #Read the other table according to a condition of one of the variables.
+
+# 1) Read album data table 
+dbGetQuery(db1, "SELECT artist_id, album_title, genre, year_of_pub AS year FROM albums ORDER BY artist_id DESC LIMIT 20;")
+
+# 2) Read artists data table 
+dbGetQuery(db1, "SELECT * FROM artists ORDER BY zip_code LIMIT 20")
 
 ```
 
@@ -123,6 +152,27 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
+# For artists dataset 
+# 1) Inset a new row, leaving zip_code variable empty
+dbGetQuery(db1, "INSERT INTO artists (row_names, artist_name, role, year_of_birth, country) VALUES ('1', 'An example', 'rapper', '2021', 'China');")
+
+# 2) Display new artists dataset with the new row
+dbGetQuery(db1, "SELECT * FROM artists ORDER BY year_of_birth DESC LIMIT 10")
+
+# 3) Delete the new row and display the dataset 
+dbGetQuery(db1, "DELETE FROM artists WHERE year_of_birth = 2021;")
+dbGetQuery(db1, "SELECT * FROM artists ORDER BY year_of_birth DESC LIMIT 10;")
+
+# For albums dataset
+# 1) Change one value in albums dataset
+dbGetQuery(db1, "UPDATE albums SET num_of_tracks = '0' WHERE artist_id = 1;")
+
+# 2) Display new albums dataset with the new value 
+dbGetQuery(db1, "SELECT * FROM albums ORDER BY artist_id LIMIT 10;")
+
+# 3) Delete the edited row and display the dataset 
+dbGetQuery(db1, "DELETE FROM albums WHERE artist_id = 1;")
+dbGetQuery(db1, "SELECT * FROM albums ORDER BY artist_id LIMIT 10;")
 
 ```
 
@@ -158,6 +208,23 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
+
+# 1) Create a new artists table 
+dbGetQuery(db1, "CREATE TABLE artists_v1 (row_names INTEGER, artist_name TEXT, role TEXT, year_of_birth INTEGER, country TEXT, zip_code TEXT);")
+
+dbListTables(db1)
+
+# 2) Insert artists data into artists_v1 table 
+dbGetQuery(db1, "INSERT INTO artists_v1 (row_names, artist_name, role, year_of_birth, country, zip_code) SELECT row_names, artist_name, role, year_of_birth, country, zip_code FROM artists;")
+
+# 3) Display artists_v1 table with limit of 10 rows and count the number of rows  
+dbGetQuery(db1, "SELECT * FROM artists_v1 LIMIT 10;")
+dbGetQuery(db1, "SELECT COUNT(*) FROM artists_v1;")
+# Conclusion: the displayed table and counted row of 50,000 with 5 variables from artists_v1 table are exactly the same as the original artists table
+
+# 4) Delete the original artists table 
+dbGetQuery(db1, "DROP TABLE artists;")
+dbListTables(db1)
 
 ```
 
@@ -212,6 +279,20 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 #EXERCISE 5
 #Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
 
+# 1) Create new table artists_v2 with row_names is set to have default 0
+dbGetQuery(db1, "CREATE TABLE artists_v2 (row_names INTEGER DEFAULT 0, artist_name TEXT, role TEXT, year_of_birth INTEGER, country TEXT, zip_code TEXT);")
+
+# 2) Test artists_v2 with some values
+dbGetQuery(db1, "INSERT INTO artists_v2 (row_names, artist_name, role, year_of_birth, country, zip_code) VALUES ('1', 'example1', 'rapper', '2000', 'USA', '001');")
+dbGetQuery(db1, "INSERT INTO artists_v2 (artist_name, role, year_of_birth, country, zip_code) VALUES ('example2', 'rapper', '2001', 'Korea', '002');")
+
+# 3) Display artists_v2
+dbGetQuery(db1, "SELECT * FROM artists_v2")
+
+# 4) Delete artists_v2
+dbGetQuery(db1, "DROP TABLE artists_v2")
+dbListTables(db1)
+
 ```
 
 
@@ -227,6 +308,17 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+# 1) Add a column "type"
+dbGetQuery(db1, "ALTER TABLE albums ADD type INTEGER DEFAULT 3;")
+
+# 2) Display the new column "type"
+dbGetQuery(db1, "SELECT * FROM albums LIMIT 10;")
+
+# 3) Delete the new column "type" and display the table 
+dbGetQuery(db1, "ALTER TABLE albums DROP COLUMN type;")
+dbGetQuery(db1, "SELECT * FROM albums LIMIT 10;")
+
 ```
 
 
@@ -247,6 +339,9 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+
+dbGetQuery(db1, "CREATE TABLE test (id INTEGER AUTO_INCREMENT PRIMARY KEY, type TEXT, score INTEGER, name TEXT, cost INTEGER);")
+dbListTables(db1)
 
 ```
 
@@ -278,6 +373,12 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
 
+# 1) Filter with AND statement 
+dbGetQuery(db1, "SELECT album_title, num_of_sales, rolling_stone_critic FROM albums WHERE num_of_sales > 999900 AND rolling_stone_critic > 4 ORDER BY num_of_sales;")
+
+# 2) Filter with LIKE statement 
+dbGetQuery(db1, "SELECT album_title, genre, num_of_sales FROM albums WHERE genre LIKE '%Heavy Metal%';")
+
 ```
 
 ## Removing Duplicates
@@ -288,6 +389,13 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+
+# 1) Insert a duplicate row into artists_v1 and display it 
+dbGetQuery(db1, "INSERT INTO artists_v1 (row_names, artist_name, role, year_of_birth, country, zip_code) VALUES ('1', 'Kameko Nelson', 'female voice', '1981', 'Slovenia', '6914');")
+dbGetQuery(db1, "SELECT * FROM artists_v1 ORDER BY row_names LIMIT 5;")
+
+# 2) Query the table without including duplicates
+dbGetQuery(db1, "SELECT DISTINCT artist_name, role FROM artists_v1;")
 
 ```
 
@@ -358,7 +466,31 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 
 #EXERCISE 10
-# Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
+# Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other.
+
+# 1) Create artists5 table and albums5 table by selecting 5 values from artists_v1 and albums table (if not creating new tables with each of 5 values, the original 2 tables would have too many values to include) 
+dbGetQuery(db1, "CREATE TABLE artists5 (id INTEGER, artist_name TEXT);")
+dbGetQuery(db1, "CREATE TABLE albums5 (id INTEGER, album_title TEXT);")
+
+dbGetQuery(db1, "INSERT INTO artists5 (id, artist_name) VALUES (1, 'Kameko Nelson');")
+dbGetQuery(db1, "INSERT INTO artists5 (id, artist_name) VALUES (2, 'Sacha Cameron');")
+dbGetQuery(db1, "INSERT INTO artists5 (id, artist_name) VALUES (3, 'Thane E. Oliver');")
+dbGetQuery(db1, "INSERT INTO artists5 (id, artist_name) VALUES (4, 'Cole E. Joseph');")
+dbGetQuery(db1, "INSERT INTO artists5 (id, artist_name) VALUES (5, 'Sonia U. Jensen');")
+
+dbGetQuery(db1, "INSERT INTO albums5 (id, album_title) VALUES (3, 'Go! Technical The Analyst');")
+dbGetQuery(db1, "INSERT INTO albums5 (id, album_title) VALUES (4, 'Repeat White Pleasant Matteo');")
+dbGetQuery(db1, "INSERT INTO albums5 (id, album_title) VALUES (5, 'Guilty Words');")
+dbGetQuery(db1, "INSERT INTO albums5 (id, album_title) VALUES (6, 'House Of Love');")
+dbGetQuery(db1, "INSERT INTO albums5 (id, album_title) VALUES (7, 'Yo No Puedo Several Of');")
+
+dbGetQuery(db1, "SELECT * FROM artists5;")
+dbGetQuery(db1, "SELECT * FROM albums5;")
+
+# 2) Display the joined table 
+dbGetQuery(db1,"SELECT l.artist_name AS artists5, r.album_title AS albums5 
+           FROM artists5 AS l 
+           LEFT JOIN albums5 AS r ON l.id = r.id")
 
 ```
 ```{r}
