@@ -320,7 +320,7 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 
 
-# add coolumn with default value 
+# add column with default value 
 dbGetQuery(mydb, "ALTER TABLE studentSES ADD region INTEGER DEFAULT 3") 
 
 # view new column 
@@ -511,6 +511,37 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
+
+dbListTables(mydb)
+
+# add new field and values to first toy table
+dbGetQuery(mydb, "ALTER TABLE testScores ADD school_name TEXT;")
+dbGetQuery(mydb, "UPDATE testScores SET school_name = 'Zakopane' WHERE courses LIKE 'C%';") 
+dbGetQuery(mydb, "UPDATE testScores SET school_name = 'Zakopane' WHERE courses LIKE 'B%';") 
+
+
+# add new field and columns to second toy table 
+
+dbGetQuery(mydb, "ALTER TABLE studentSES ADD school_name TEXT;") 
+dbGetQuery(mydb, "UPDATE studentSES SET school_name = 'Zakopane' WHERE regions LIKE '_a%';") 
+dbGetQuery(mydb, "UPDATE studentSES SET school_name = 'Milec Liceum' WHERE regions LIKE 'N%';") 
+
+# view new additions to tables 
+
+dbGetQuery(mydb, "SELECT * FROM studentSES LIMIT 10;") 
+dbGetQuery(mydb, "SELECT * FROM testScores LIMIT 10;") 
+ 
+
+# select all rows from testScores and only those schools named 'Zakopane' from studentSES 
+
+
+dbGetQuery(mydb, "SELECT *
+           FROM testScores
+           LEFT JOIN studentSES
+           ON testScores.school_name = studentSES.school_name;") 
+
+    
+
 
 ```
 ```{r}
