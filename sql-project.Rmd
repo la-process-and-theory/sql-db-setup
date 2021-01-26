@@ -8,15 +8,16 @@ Before you follow the directions below, please take a screenshot of your AWS con
 
 ## Connect to AWS MySQL Database
 ```{r}
-#install.packages("DBI", "RMySQL")
+install.packages("DBI", "RMySQL")
 
 library(DBI)
 library(RMySQL)
+library(random)
 
-db_user <- 'admin'
-db_password <- 'testsql!'
+db_user <- 'AndyChenHe'
+db_password <- '70072772'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.covky6eeui3c.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -55,6 +56,24 @@ dbReadTable(mydb, 'studentInfo')
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
 
+animeName <- randomStrings(30,5)
+animeRating <- sample(30)
+animeComments <- randomStrings(30,10)
+animeInfo <- data.frame(animeName, animeRating, animeComments)
+names(animeInfo) <- c('name','rating','comments')
+
+movieName <- randomStrings(30,5)
+movieRating <- sample(30)
+movieComments <- randomStrings(30,10)
+movieInfo <- data.frame(movieName, movieRating, movieComments)
+names(movieInfo) <- c('mName','mRating','mComments')
+
+dbWriteTable(mydb, "anime", animeInfo)
+dbWriteTable(mydb, "movie", movieInfo)
+
+dbListTables(mydb, movie)
+
+
 ```
 
 ## Getting into SQL - READING
@@ -82,8 +101,10 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
+dbGetQuery(mydb, "SELECT name AS animeName FROM anime ORDER BY rating LIMIT 20;")
 
 #Read the other table according to a condition of one of the variables.
+dbGetQuery(mydb, "SELECT * FROM movie WHERE mRating >= 10 ORDER BY mRating LIMIT 20;")
 
 ```
 
@@ -123,6 +144,13 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
+dbGetQuery(mydb, "INSERT INTO anime (name, rating) VALUES ('testing', 10);")
+dbGetQuery(mydb, "INSERT INTO movie (mName, mRating, mComments) VALUES ('testing', 10, 'lolololololo');")
+
+dbGetQuery(mydb, "UPDATE movie SET mRating = '23' WHERE mName = 'testing';")
+
+dbGetQuery(mydb, "DELETE FROM movie WHERE mName = 'testing';")
+dbGetQuery(mydb, "DELETE FROM anime WHERE name = 'testing';")
 
 ```
 
@@ -158,6 +186,17 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
+
+dbGetQuery(mydb,"CREATE TABLE anime2 (
+  name TEXT, 
+  rating INTEGER,
+  comments TEXT
+  );")
+
+dbGetQuery(mydb,"INSERT INTO anime2 (name, rating,comments) VALUES SELECT name, rating,comments FROM anime;")
+
+dbGetQuery(mydb,"SELECT name, rating,comments FROM anime2;")
+dbGetQuery(mydb,"DROP TABLE IF EXISTS anime;")
 
 ```
 
@@ -212,6 +251,24 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 #EXERCISE 5
 #Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
 
+dbGetQuery(mydb,"CREATE TABLE anime3 (
+  name TEXT, 
+  rating INTEGER DEFAULT 0,
+  comments TEXT
+  );")
+
+dbGetQuery(mydb,"INSERT INTO anime3 (name, rating,comments) SELECT name, rating,comments FROM anime2;")
+
+
+dbGetQuery(mydb,"INSERT INTO anime3 (name, comments) VALUES ('testing2', 'AAAAA');")
+
+dbGetQuery(mydb, "SELECT * FROM anime3 WHERE name = 'testing2';")
+
+
+dbGetQuery(mydb,"DROP TABLE IF EXISTS anime3;")
+
+
+
 ```
 
 
@@ -227,6 +284,14 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+dbGetQuery(mydb, "ALTER TABLE anime2 ADD ohYeahPower INTEGER DEFAULT 1 ")
+
+dbGetQuery(mydb, "SELECT * FROM anime2 LIMIT 10;")
+
+#Delete a column
+dbGetQuery(mydb, "ALTER TABLE anime2 DROP COLUMN ohYeahPower;")
+
 ```
 
 
@@ -247,6 +312,16 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+
+dbGetQuery(mydb,"CREATE TABLE food (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, 
+  name TEXT, 
+  descr TEXT,
+  comments TEXT,
+  rating INTEGER
+  );")
+
+
 
 ```
 
@@ -278,6 +353,9 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
 
+dbGetQuery(mydb, "SELECT * FROM movie WHERE mName LIKE '%U%'AND mRating >10;")
+dbGetQuery(mydb, "SELECT * FROM movie WHERE mName LIKE 'U%'AND mRating IN (11,12);")
+
 ```
 
 ## Removing Duplicates
@@ -288,6 +366,10 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+dbGetQuery(mydb,"INSERT INTO anime2 (name, rating,comments) VALUES ('testing2', 10, 'hahahahah');")
+dbGetQuery(mydb,"INSERT INTO anime2 (name, rating,comments) VALUES ('testing2', 10, 'hahahahah');")
+dbGetQuery(mydb, "SELECT DISTINCT * FROM anime2;")
+
 
 ```
 
@@ -358,7 +440,27 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 
 #EXERCISE 10
-# Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
+# Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other.
+
+dbGetQuery(mydb, "ALTER TABLE anime2 ADD id INTEGER AUTO_INCREMENT PRIMARY KEY;")
+dbGetQuery(mydb, "ALTER TABLE anime2 AUTO_INCREMENT=1;")
+
+dbGetQuery(mydb, "SELECT * FROM anime2")
+
+dbGetQuery(mydb, "ALTER TABLE movie ADD id INTEGER DEFAULT 1")
+dbGetQuery(mydb, "SELECT * FROM movie")
+
+dbGetQuery(mydb,"SELECT a.id 
+           FROM anime2 a 
+           JOIN movie m ON a.id = m.id")
+dbGetQuery(mydb,"SELECT *
+           FROM anime2 a,
+           movie m,
+           (SELECT a.id 
+           FROM anime2 a 
+           JOIN movie m ON a.id = m.id) sub1 
+          WHERE sub1.id = a.id AND sub1.id = m.id
+           ")
 
 ```
 ```{r}
