@@ -1,6 +1,6 @@
 ---
 title: "sql-workshop"
-author: "Charles Lang"
+author: "Christina Huang"
 output: html_document
 ---
 
@@ -8,15 +8,16 @@ Before you follow the directions below, please take a screenshot of your AWS con
 
 ## Connect to AWS MySQL Database
 ```{r}
-#install.packages("DBI", "RMySQL")
+#install.packages("DBI")
+#install.packages('RMySQL', type = 'source')
 
 library(DBI)
 library(RMySQL)
 
-db_user <- 'admin'
-db_password <- 'testsql!'
+db_user <- 'ch3427'
+db_password <- 'ch3427ch3427'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.cd2kywsv4fiw.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -55,6 +56,14 @@ dbReadTable(mydb, 'studentInfo')
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
 
+library(dplyr)
+DF1 <- select (studentRegistration, code_module, code_presentation,id_student,date_registration,date_unregistration)
+DF2 <- select (studentInfo, code_module,code_presentation,id_student,gender,region,highest_education,imd_band,age_band,num_of_prev_attempts,studied_credits,disability,final_result)
+
+dbWriteTable(mydb, "StudentRegistrationDF", DF1)
+dbWriteTable(mydb, "StudentInfoDF", DF2)
+dbListTables(mydb)
+
 ```
 
 ## Getting into SQL - READING
@@ -83,7 +92,10 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
 
+dbGetQuery(mydb, "SELECT id_student, gender FROM StudentInfoDF ORDER BY id_student DESC LIMIT 20;") #Order listed will be reflected in order in table
+
 #Read the other table according to a condition of one of the variables.
+dbGetQuery(mydb, "SELECT * FROM StudentRegistrationDF WHERE code_presentation = '2013J'") 
 
 ```
 
@@ -123,6 +135,19 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
+#Insert a new row in one of your toy data tables leaving one variable (code_module) empty
+dbGetQuery(mydb, "INSERT INTO StudentInfoDF (code_presentation,id_student,gender,region,highest_education,imd_band,age_band,num_of_prev_attempts,studied_credits,disability, final_result) VALUES ('2013J','111111','F','Scotland','HE Qualification','20-30%','35-55','0','60','N','Pass');")
+
+#Change one value in your other table
+dbGetQuery(mydb, "UPDATE StudentRegistrationDF SET date_registration = '-53' WHERE id_student = 11391;")
+
+#Display your new tables
+dbGetQuery(mydb, "SELECT * FROM StudentRegistrationDF ORDER BY id_student DESC;")
+dbGetQuery(mydb, "SELECT * FROM StudentInfoDF ORDER BY id_student DESC;")
+
+#Delete the row you edited and the row you inserted
+dbGetQuery(mydb, "DELETE FROM StudentInfoDF WHERE id_student = 111111;")
+dbGetQuery(mydb, "DELETE FROM StudentRegistrationDF WHERE id_student = 11391;")
 
 ```
 
@@ -158,6 +183,21 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
+
+#Create a table that is exactly the same as your first toy data table but this time use SQL commands
+dbGetQuery(mydb,"CREATE TABLE StudentRegistrationDF2 (
+  code_module TEXT, 
+  code_presentation TEXT,
+  id_student INTEGER,
+  date_registration INTEGER,
+  date_unregistration INTEGER
+  );")
+
+#Display your new table
+dbListTables(mydb)
+
+#Delete the original table
+dbGetQuery(mydb, "DROP TABLE StudentRegistrationDF;")
 
 ```
 
@@ -210,7 +250,33 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
 #EXERCISE 5
-#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+#Recreate one of your toy data tables with the constraint that for one of the integer variables the default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+
+dbGetQuery(mydb,"CREATE TABLE StudentRegistrationDF3 (
+  code_module TEXT, 
+  code_presentation TEXT,
+  id_student INTEGER DEFAULT 0,
+  date_registration INTEGER,
+  date_unregistration INTEGER
+  );")
+
+dbListTables(mydb)
+
+dbGetQuery(mydb,"INSERT INTO StudentRegistrationDF3 (
+  code_module TEXT, 
+  code_presentation TEXT,
+  id_student INTEGER DEFAULT 0,
+  date_registration INTEGER,
+  date_unregistration INTEGER
+  )
+  VALUES
+  ('BBB','2044C',NULL,'-384',' ')
+  ('BBB',NULL,'11391','-25',' ')
+  ;")
+
+dbListTables(mydb)
+
+dbGetQuery(mydb, "DROP TABLE StudentRegistrationDF3;")
 
 ```
 
@@ -227,6 +293,18 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+#Add a column with default value 3
+dbGetQuery(mydb, "ALTER TABLE StudentRegistrationDF2 ADD id_student INTEGER DEFAULT 3 ")
+
+dbGetQuery(mydb, "SELECT * FROM StudentRegistrationDF2 LIMIT 10;")
+
+#Delete a column
+dbGetQuery(mydb, "ALTER TABLE StudentRegistrationDF2 DROP COLUMN id_student;")
+
+dbListTables(mydb)
+
+
 ```
 
 
@@ -247,6 +325,23 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+
+dbGetQuery(mydb,"CREATE TABLE parrot (
+  parrot_id INTEGER AUTO_INCREMENT PRIMARY KEY, 
+  parrot_name TEXT, 
+  parrot_color TEXT,
+  parrot_age INTEGER
+  );")
+
+dbGetQuery(mydb,"INSERT INTO parrot (parrot_name, parrot_color, parrot_age) 
+           VALUES ('A', 'Blue', '1');")
+dbGetQuery(mydb,"INSERT INTO parrot (parrot_name, parrot_color, parrot_age) 
+           VALUES ('B', 'Red', '2');")
+dbGetQuery(mydb,"INSERT INTO parrot (parrot_name, parrot_color, parrot_age) 
+           VALUES ('C', 'Green', '3');")
+
+dbGetQuery(mydb, "SELECT * FROM parrot;")
+
 
 ```
 
@@ -278,6 +373,11 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
 
+dbGetQuery(mydb, "SELECT id_student, gender, region FROM StudentInfoDF WHERE region LIKE '%Region';")
+
+dbGetQuery(mydb, "SELECT id_student, gender, region FROM StudentInfoDF WHERE region IN ('Wales','Ireland');")
+
+
 ```
 
 ## Removing Duplicates
@@ -288,6 +388,23 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+
+#Insert a duplicate row into one of your toy data tables
+dbGetQuery(mydb,"INSERT INTO StudentRegistrationDF2 (
+  code_module, 
+  code_presentation,
+  id_student,
+  date_registration,
+  date_unregistration
+  )
+  VALUES
+  ('ABC','2054D','12391','-564',' ');")
+
+#Query the table without including duplicates.
+dbGetQuery(mydb, "SELECT DISTINCT date_registration FROM StudentRegistrationDF2;")
+
+dbListTables(mydb)
+
 
 ```
 
@@ -360,18 +477,43 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
 
+# Create a common id variable in your two toy data tables
+dbGetQuery(mydb, "ALTER TABLE StudentRegistrationDF2 ADD id_student INTEGER DEFAULT 3 ")
+dbGetQuery(mydb, "ALTER TABLE StudentInfoDF2 ADD id_student INTEGER DEFAULT 3 ")
+
+dbGetQuery(mydb, "SELECT * FROM StudentRegistrationDF2;")
+dbGetQuery(mydb, "SELECT * FROM StudentInfoDF2;")
+
+dbGetQuery(mydb,"SELECT l.description AS StudentRegistrationDF2, r.description AS StudentInfoDF2 
+           FROM StudentRegistrationDF2 AS l 
+           JOIN StudentInfoDF2 AS r ON l.id = r.id")
+
+dbGetQuery(mydb,"SELECT l.description AS StudentRegistrationDF2, r.description AS StudentInfoDF2 
+           FROM StudentRegistrationDF2 AS l 
+           RIGHT JOIN StudentInfoDF2 AS r ON l.id = r.id")
+
+dbGetQuery(mydb,"SELECT l.description AS StudentRegistrationDF2, r.description AS StudentInfoDF2 
+           FROM StudentRegistrationDF2 AS l 
+           LEFT JOIN StudentInfoDF2 AS r ON l.id = r.id")
+
+#Union
+dbGetQuery(mydb, "SELECT * FROM StudentRegistrationDF2
+           UNION
+           SELECT * FROM StudentInfoDF2;")
+
+
 ```
 ```{r}
 #Now disconnect from your database
 dbDisconnect(mydb)
 
-#Then retunr to your AWS console and:
+#Then return to your AWS console and:
 
 #1. Click on "Actions" and then "Stop"
 #2. Do NOT make a snapshot
 #3 Click on "Actions" again and click "Delete"
 #4. Unclick "Make a final snapshot"
-#5. Clicl "I acknowledge that upon instance deletion, automated backups, including system snapshots and point-in-time recovery, will no longer be available."
+#5. Click "I acknowledge that upon instance deletion, automated backups, including system snapshots and point-in-time recovery, will no longer be available."
 #6. Type "delete me" into the field
 
 #Failure to follow these steps could result in charges to your credit card.
