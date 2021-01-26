@@ -1,6 +1,6 @@
 ---
 title: "sql-workshop"
-author: "Charles Lang"
+author: "Peter Kim"
 output: html_document
 ---
 
@@ -16,7 +16,7 @@ library(RMySQL)
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.cyps0koocwck.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -55,6 +55,11 @@ dbReadTable(mydb, 'studentInfo')
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
 
+toy_data1 <- studentInfo[1:30, 10:12]
+toy_data2 <- studentInfo[1:30, c("gender", "num_of_prev_attempts", "region")]
+dbWriteTable(mydb, "toy_data1", toy_data1)
+dbWriteTable(mydb, "toy_data2", toy_data2)
+
 ```
 
 ## Getting into SQL - READING
@@ -83,7 +88,12 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
 
+dbGetQuery(mydb, "SELECT studied_credits, disability, final_result FROM toy_data1 ORDER BY studied_credits DESC LIMIT 20;")
+
 #Read the other table according to a condition of one of the variables.
+
+dbGetQuery(mydb, "SELECT region FROM toy_data2 ORDER BY region DESC LIMIT 20;")
+
 
 ```
 
@@ -123,6 +133,13 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
+dbGetQuery(mydb, "INSERT INTO toy_data1 (disability, final_result) VALUES ('Y', 'Pass');")
+dbGetQuery(mydb, "SELECT * FROM toy_data1 ORDER BY studied_credits LIMIT 20;")
+dbGetQuery(mydb, "UPDATE toy_data2 SET region = 'NULL' WHERE region = 'Ireland';")
+dbGetQuery(mydb, "SELECT region FROM toy_data2 ORDER BY region LIMIT 30;")
+
+dbGetQuery(mydb, "DELETE FROM toy_data1 WHERE studied_credits = NULL;")
+dbGetQuery(mydb, "DELETE FROM toy_data2 WHERE region = 'NULL';")
 
 ```
 
@@ -159,6 +176,46 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
 
+dbGetQuery(mydb,"CREATE TABLE toy_data_create (
+  studied_credits INTEGER, 
+  disability TEXT,
+  final_result TEXT
+  );")
+
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 240, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'Y', 'Withdrawn' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 120, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 90, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Withdrawn' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 150, 'N', 'Fail' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Withdrawn' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Pass' );")
+dbGetQuery(mydb, "INSERT INTO toy_data_create VALUES ( 60, 'N', 'Withdrawn' );")
+
+dbReadTable(mydb, 'toy_data_create')
+
+dbGetQuery(mydb, "DROP TABLE toy_data_create;")
 ```
 
 # NULL Value
@@ -210,8 +267,25 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
 #EXERCISE 5
-#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+#Recreate one of your toy data tables with the constraint that for one of the integer variables the default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
 
+dbGetQuery(mydb,"CREATE TABLE toy_data2_ex5 (
+   num_of_prev_attempts INTEGER DEFAULT 0, 
+   gender TEXT,
+   region TEXT
+   );")
+dbGetQuery(mydb,"INSERT INTO toy_data2_ex5 (gender, region) VALUES ('F', 'America');")
+dbGetQuery(mydb,"INSERT INTO toy_data2_ex5 (num_of_prev_attempts) VALUES ('999');")
+dbGetQuery(mydb,"INSERT INTO toy_data2_ex5 (num_of_prev_attempts) VALUES ('99');")
+dbGetQuery(mydb,"INSERT INTO toy_data2_ex5 (region) VALUES ('USA');")
+dbGetQuery(mydb,"INSERT INTO toy_data2_ex5 (gender, region) VALUES ('F', 'America');")
+dbGetQuery(mydb,"INSERT INTO toy_data2_ex5 (region) VALUES ('Canada');")
+dbGetQuery(mydb,"INSERT INTO toy_data2_ex5 (gender, region, num_of_prev_attempts) VALUES ('M', 'USA', '999');")
+dbGetQuery(mydb,"INSERT INTO toy_data2_ex5 (gender) VALUES ('M');")
+
+dbReadTable(mydb, 'toy_data2_ex5')
+
+dbGetQuery(mydb, "DROP TABLE toy_data2_ex5;")
 ```
 
 
@@ -227,6 +301,15 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+dbGetQuery(mydb, "ALTER TABLE toy_data1 ADD classes INTEGER DEFAULT 3 ")
+
+dbGetQuery(mydb, "SELECT * FROM toy_data1 LIMIT 10;")
+
+#Delete a column
+dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
+
+
 ```
 
 
@@ -247,6 +330,15 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+
+dbGetQuery(mydb,"CREATE TABLE table_ex7 (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, 
+  score INTEGER, 
+  student TEXT, 
+  courses TEXT,
+  grade INTEGER
+  );")
+
 
 ```
 
@@ -278,6 +370,11 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
 
+#AND Statement
+dbGetQuery(mydb, "SELECT studied_credits, disability, final_result FROM toy_data1 WHERE studied_credits > 60 AND disability = 'N' ORDER BY studied_credits DESC;")
+
+#LIKE
+dbGetQuery(mydb, "SELECT studied_credits, disability, final_result FROM toy_data1 WHERE final_result LIKE '%Fail%';")
 ```
 
 ## Removing Duplicates
@@ -288,6 +385,10 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+
+dbGetQuery(mydb, "INSERT INTO toy_data1 (studied_credits, disability, final_result) VALUES ('240', 'N', 'Pass');")
+
+dbGetQuery(mydb, "SELECT DISTINCT studied_credits FROM toy_data1;")
 
 ```
 
@@ -360,6 +461,104 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
 
+dbGetQuery(mydb, "DROP TABLE toy_data1;")
+dbGetQuery(mydb, "DROP TABLE toy_data2;")
+
+dbGetQuery(mydb,"CREATE TABLE toy_data1 (
+  studied_credits INTEGER, 
+  disability TEXT,
+  final_result TEXT,
+  id INTEGER
+  );")
+
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 240, 'N', 'Pass', 15 );")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' , 16);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'Y', 'Withdrawn', 17 );")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' , 18);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,19);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,20);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,21);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 120, 'N', 'Pass' ,22);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 90, 'N', 'Pass' ,23);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,24);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,25);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,26);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,27);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,28);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,29);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Withdrawn' ,30);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,31);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,32);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 150, 'N', 'Fail' ,33);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,34);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,35);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,36);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Withdrawn',37 );")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,38);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,39);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,40);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,41);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,42);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Pass' ,43);")
+dbGetQuery(mydb, "INSERT INTO toy_data1 VALUES ( 60, 'N', 'Withdrawn',44 );")
+
+dbGetQuery(mydb,"CREATE TABLE toy_data2 (
+  studied_credits INTEGER, 
+  disability TEXT,
+  final_result TEXT,
+  id INTEGER
+  );")
+
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 240, 'N', 'Pass', 1 );")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' , 2);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'Y', 'Withdrawn', 3 );")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' , 4);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,5);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,6);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,7);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 120, 'N', 'Pass' ,8);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 90, 'N', 'Pass' ,9);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,10);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,11);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,12);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,13);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,14);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,15);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Withdrawn' ,16);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,17);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,18);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 150, 'N', 'Fail' ,19);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,20);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,21);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,22);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Withdrawn',23 );")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,24);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,25);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,26);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,27);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,28);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Pass' ,29);")
+dbGetQuery(mydb, "INSERT INTO toy_data2 VALUES ( 60, 'N', 'Withdrawn',30 );")
+
+dbGetQuery(mydb, "SELECT * FROM toy_data1;")
+dbGetQuery(mydb, "SELECT * FROM toy_data2;")
+
+dbGetQuery(mydb,"SELECT l.studied_credits AS toy_data1, r.studied_credits AS toy_data2 
+           FROM toy_data1 AS l 
+           JOIN toy_data2 AS r ON l.id = r.id")
+
+dbGetQuery(mydb,"SELECT l.studied_credits AS toy_data1, r.studied_credits AS toy_data2 
+           FROM toy_data1 AS l 
+           RIGHT JOIN toy_data2 AS r ON l.id = r.id")
+
+dbGetQuery(mydb,"SELECT l.studied_credits AS toy_data1, r.studied_credits AS toy_data2 
+           FROM toy_data1 AS l 
+           LEFT JOIN toy_data2 AS r ON l.id = r.id")
+
+#Union
+dbGetQuery(mydb, "SELECT * FROM toy_data1
+           UNION
+           SELECT * FROM toy_data2;")
 ```
 ```{r}
 #Now disconnect from your database
