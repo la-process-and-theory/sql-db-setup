@@ -16,7 +16,7 @@ library(RMySQL)
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.cnhczv04rej3.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -41,7 +41,7 @@ studentRegistration <- read.csv("studentRegistration.csv", header = TRUE)
 dbListTables(mydb)
 
 #Write a new table to the DB
-dbWriteTable(mydb, "studentInfo", studentInfo)
+dbWriteTable(mydb, "studentInfo", studentInfo) 
 dbWriteTable(mydb, "studentAssessment", studentAssessment)
 dbWriteTable(mydb, "courses", courses)
 dbWriteTable(mydb, "studentRegistration", studentRegistration)
@@ -60,7 +60,7 @@ dbReadTable(mydb, 'studentInfo')
 ## Getting into SQL - READING
 ```{r}
 #Query a portion of the database (always returns dataframe)
-dbGetQuery(mydb, "SELECT * FROM studentInfo LIMIT 10;")
+dbGetQuery(mydb, "SELECT * FROM studentInfo LIMIT 10;")           
 
 dbGetQuery(mydb, "SELECT * FROM studentInfo ORDER BY id_student LIMIT 10;")
 
@@ -90,7 +90,7 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 ## Getting into SQL - UPDATING
 ```{r}
 #Count rows
-dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment;")
+dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment;")   
 
 #Add a row
 dbGetQuery(mydb, "INSERT INTO studentAssessment (id_assessment, id_student, date_submitted, is_banked, score) VALUES ('00001', '1', '20', '0', '50');")
@@ -378,4 +378,7 @@ dbDisconnect(mydb)
 
 
 ```
+
+
+![AWS screen shot.](/Users/keerzhou/Desktop/AWS console screen shot.png)
 
