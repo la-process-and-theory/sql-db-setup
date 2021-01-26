@@ -16,7 +16,7 @@ library(RMySQL)
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.cb0sypnvgbdq.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -54,7 +54,13 @@ dbReadTable(mydb, 'studentInfo')
 
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
-
+library(dplyr)
+D1 = select(studentInfo, "id_student", "gender", "studied_credits")
+D2 = select(studentInfo, "id_student", "region", "disability")
+dbWriteTable(mydb, "T1", D1)
+dbWriteTable(mydb, "T2", D2)
+dbReadTable(mydb, 'T1')
+dbReadTable(mydb, 'T2')
 ```
 
 ## Getting into SQL - READING
@@ -82,9 +88,10 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
+dbGetQuery(mydb, "SELECT id_student AS 'Student ID', gender, studied_credits FROM T1 ORDER BY studied_credits DESC LIMIT 20;")
 
 #Read the other table according to a condition of one of the variables.
-
+dbGetQuery(mydb, "SELECT id_student, region, disability FROM T2 WHERE disability = 'Y' LIMIT 20;")
 ```
 
 ## Getting into SQL - UPDATING
@@ -121,9 +128,16 @@ dbGetQuery(mydb, "DELETE FROM studentAssessment WHERE id_student = 1;")
 dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;")
 
 #EXERCISE 3
-#Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
+#Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted.
+dbGetQuery(mydb, "INSERT INTO T1 (id_student, gender) VALUES ('1', 'M');")
+dbGetQuery(mydb, "SELECT * FROM T1 ORDER BY id_student LIMIT 10;")
+dbGetQuery(mydb, "DELETE FROM T1 WHERE id_student = 1;")
+dbGetQuery(mydb, "SELECT * FROM T1 ORDER BY id_student LIMIT 10;")
 
-
+dbGetQuery(mydb, "UPDATE T2 SET disability = 'Y' WHERE id_student = 3733;")
+dbGetQuery(mydb, "SELECT * FROM T2 ORDER BY id_student LIMIT 10;")
+dbGetQuery(mydb, "DELETE FROM T2 WHERE id_student = 3733;")
+dbGetQuery(mydb, "SELECT * FROM T2 ORDER BY id_student LIMIT 10;")
 ```
 
 ## Add/Deleting Table
@@ -158,7 +172,14 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
-
+dbGetQuery(mydb,"CREATE TABLE toy1 (
+  id_student INTEGER, 
+  gender TEXT,
+  studied_credits INTEGER
+  );")
+dbGetQuery(mydb,"INSERT INTO toy1 (id_student, gender, studied_credits) SELECT id_student, gender, studied_credits FROM T1;")
+dbGetQuery(mydb, "SELECT * FROM toy1 ORDER BY id_student LIMIT 10;")
+dbGetQuery(mydb, "DROP TABLE T1;")
 ```
 
 # NULL Value
@@ -210,15 +231,23 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
 #EXERCISE 5
-#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
-
+#Recreate one of your toy data tables with the constraint that for one of the integer variables the default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+dbGetQuery(mydb,"CREATE TABLE toy2 (
+  id_student INTEGER, 
+  gender TEXT,
+  studied_credits INTEGER DEFAULT 0
+   );")
+dbGetQuery(mydb,"INSERT INTO toy2 (id_student, gender) VALUES ('1', 'M');")
+dbGetQuery(mydb,"INSERT INTO toy2 (id_student, gender) VALUES ('2', 'F');")
+dbGetQuery(mydb, "SELECT * FROM toy2;")
+dbGetQuery(mydb, "DROP TABLE toy2;")
 ```
 
 
 # Adding a column with a default value
 ```{r}
 #Add a column with default value 1
-dbGetQuery(mydb, "ALTER TABLE studentAssessment ADD email INTEGER DEFAULT 1 ")
+dbGetQuery(mydb, "ALTER TABLE studentAssessment ADD email INTEGER DEFAULT 1")
 
 dbGetQuery(mydb, "SELECT * FROM studentAssessment LIMIT 10;")
 
@@ -227,6 +256,9 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+dbGetQuery(mydb, "ALTER TABLE toy1 ADD email INTEGER DEFAULT 3")
+dbGetQuery(mydb, "SELECT * FROM toy1 LIMIT 10;")
+dbGetQuery(mydb, "ALTER TABLE toy1 DROP COLUMN email;")
 ```
 
 
@@ -247,7 +279,16 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
-
+dbGetQuery(mydb,"CREATE TABLE toy3 (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY,
+  var1 INTEGER, 
+  var2 TEXT,
+  var3 TEXT,
+  var4 TEXT
+  );")
+dbGetQuery(mydb,"INSERT INTO toy3 (var1, var2, var3, var4) VALUES (15, 'A', 'B', 'C');")
+dbGetQuery(mydb,"INSERT INTO toy3 (var1, var2, var3, var4) VALUES (10, 'D', 'E', 'F');")
+dbGetQuery(mydb, "SELECT * FROM toy3;")
 ```
 
 ## Filtering (WHERE)
@@ -277,7 +318,8 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
-
+dbGetQuery(mydb, "SELECT id_student, gender, studied_credits FROM toy1 WHERE gender = 'F' AND studied_credits =120 ORDER BY id_student DESC LIMIT 10;")
+dbGetQuery(mydb, "SELECT id_student, region, disability FROM T2 WHERE region LIKE '_c%' ORDER BY id_student DESC LIMIT 10;")
 ```
 
 ## Removing Duplicates
@@ -288,7 +330,8 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
-
+dbGetQuery(mydb, "INSERT INTO toy1 (id_student, gender, studied_credits) VALUES ('11391', 'M', '240');")
+dbGetQuery(mydb, "SELECT DISTINCT id_student, gender, studied_credits FROM toy1;")
 ```
 
 ## Conditional Expressions (non-standard)
@@ -359,19 +402,21 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
-
+dbGetQuery(mydb, "SELECT id_student, gender, studied_credits FROM toy1
+           UNION
+           SELECT id_student, region, disability FROM T2;")
 ```
 ```{r}
 #Now disconnect from your database
 dbDisconnect(mydb)
 
-#Then retunr to your AWS console and:
+#Then return to your AWS console and:
 
 #1. Click on "Actions" and then "Stop"
 #2. Do NOT make a snapshot
 #3 Click on "Actions" again and click "Delete"
 #4. Unclick "Make a final snapshot"
-#5. Clicl "I acknowledge that upon instance deletion, automated backups, including system snapshots and point-in-time recovery, will no longer be available."
+#5. Click "I acknowledge that upon instance deletion, automated backups, including system snapshots and point-in-time recovery, will no longer be available."
 #6. Type "delete me" into the field
 
 #Failure to follow these steps could result in charges to your credit card.
