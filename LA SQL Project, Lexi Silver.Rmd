@@ -1,0 +1,572 @@
+---
+title: "sql-workshop"
+author: "Lexi Silver"
+output: html_document
+---
+
+Before you follow the directions below, please take a screenshot of your AWS console showing the running database and upload it to your repo.
+
+## Connect to AWS MySQL Database
+```{r}
+install.packages("DBI", "RMySQL")
+
+library(DBI)
+library(RMySQL)
+
+db_user <- 'asilver'
+db_password <- 'Success44!'
+db_name <- 'oudb'
+db_host <- 'database-1.cgiqf3ndnajw.us-east-2.rds.amazonaws.com'
+db_port <- 3306
+
+mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
+
+# summary(mydb)
+```
+
+## Load OU Data
+```{r}
+#Student demographic data
+studentInfo <- read.csv("studentInfo.csv", header = TRUE)
+#Student assessment data
+studentAssessment <- read.csv("studentAssessment.csv", header = TRUE)
+#Course data
+courses <- read.csv("courses.csv", header = TRUE)
+studentRegistration <- read.csv("studentRegistration.csv", header = TRUE)
+```
+
+## Write data to the DB using the DBI package
+```{r}
+#List the tables in the DB - should be zero
+dbListTables(mydb)
+
+#Write a new table to the DB
+dbWriteTable(mydb, "studentInfo", studentInfo)
+dbWriteTable(mydb, "studentAssessment", studentAssessment)
+dbWriteTable(mydb, "courses", courses)
+dbWriteTable(mydb, "studentRegistration", studentRegistration)
+
+#List tables to see that table was added
+dbListTables(mydb)
+
+#Read a particular table
+
+
+#EXERCISE 1
+#Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
+
+dbWriteTable(mydb, "fish", fish)
+dbWriteTable(mydb, "playareas", playareas)
+
+## Getting into SQL - READING
+
+#Query a portion of the database (always returns dataframe)
+dbGetQuery(mydb, "SELECT * FROM studentInfo LIMIT 10;")
+
+dbGetQuery(mydb, "SELECT * FROM studentInfo ORDER BY id_student LIMIT 10;")
+
+dbGetQuery(mydb, "SELECT id_student, gender FROM studentInfo ORDER BY id_student DESC LIMIT 10;") #Order listed will be reflected in order in table
+
+dbGetQuery(mydb, "SELECT id_student AS 'Student ID', gender FROM studentInfo LIMIT 10;") #SQL Standard says quotes for literal strings and double quotes for everything else but that conflicts with R
+
+#Count the number of rows
+dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment;")
+
+#Using a WHERE statement on all columns
+dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50;")
+
+#Using a WHERE statement on a single column (will not include missing data)
+
+#Using an AND statement
+
+#EXERCISE 2
+#Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
+
+dbGetQuery(mydb, "SELECT Breed AS 'Type', Tank, Sex FROM fish ORDER BY row_names DESC LIMIT 20;")
+
+#Read the other table according to a condition of one of the variables.
+dbGetQuery(mydb, "SELECT Development, Location, Classroom FROM playareas WHERE Development = 'Pretend Play';")
+
+
+
+
+
+
+
+## Getting into SQL - UPDATING
+
+#Count rows
+dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment;")
+
+#Add a row
+dbGetQuery(mydb, "INSERT INTO studentAssessment (id_assessment, id_student, date_submitted, is_banked, score) VALUES ('00001', '1', '20', '0', '50');")
+
+#Count rows again
+dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment;")
+
+#View inserted row
+dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;")
+
+#Add a row with missing values
+dbGetQuery(mydb, "INSERT INTO studentAssessment (id_assessment, id_student, date_submitted) VALUES ('00001', '1', '20');")
+
+#View inserted row
+dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;")
+
+#Update a row
+dbGetQuery(mydb, "UPDATE studentAssessment SET score = '20' WHERE id_student = 1;")
+
+dbGetQuery(mydb, "SELECT id_student, score FROM studentAssessment ORDER BY id_student LIMIT 10;")
+
+#Update a row with NULL
+dbGetQuery(mydb, "UPDATE studentAssessment SET score = 'NULL' WHERE id_student = 6516;")
+
+#Delete a row (destructive)
+dbGetQuery(mydb, "DELETE FROM studentAssessment WHERE id_student = 1;")
+
+dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;")
+
+
+
+
+
+
+
+
+
+#EXERCISE 3
+#Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
+
+dbGetQuery(mydb, "INSERT INTO playareas (Development, Location) VALUES ('Gross Motor', 'Outdoor');")
+dbReadTable(mydb, 'playareas')
+```
+
+
+```{r}
+
+dbGetQuery(mydb, "UPDATE fish SET Tank = '7' WHERE Breed = 'Betta' AND Sex = 'F';")
+dbReadTable(mydb, 'fish')
+```
+
+```{r}
+
+dbGetQuery(mydb, "DELETE FROM fish WHERE Breed = 'Betta' AND Tank = '7' AND Sex = 'F';")
+dbReadTable(mydb, 'fish')
+dbGetQuery(mydb, "DELETE FROM playareas WHERE Classroom IS NULL;")
+dbReadTable(mydb, 'playareas')
+
+
+
+
+```
+
+## Add/Deleting Table
+```{r}
+#Creating a new table in SQL
+dbGetQuery(mydb,"CREATE TABLE test (
+  score INTEGER, 
+  student TEXT
+  );")
+
+dbListTables(mydb)
+
+#Inserting data into the table
+
+dbGetQuery(mydb, "INSERT INTO test VALUES ( 11, 'Jen' );")
+dbGetQuery(mydb, "INSERT INTO test VALUES ( 9, 'Frank' );")
+
+dbGetQuery(mydb, "SELECT * FROM test;")
+
+#Inserting a NULL row
+dbGetQuery(mydb, "INSERT INTO test DEFAULT VALUES;") #Will not work use instead:
+
+dbGetQuery(mydb,"INSERT INTO test (score, student) SELECT score, id_student FROM studentAssessment;")
+
+#Delete a table
+dbGetQuery(mydb, "DROP TABLE test;")
+
+dbGetQuery(mydb, "SELECT * FROM test;") #This should produce an error since your table no longer exists
+
+#Delete a table if it exists
+dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it exists
+
+
+
+
+
+
+
+
+#EXERCISE 4
+#Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
+
+dbGetQuery(mydb, "CREATE TABLE SQLfish (breed TEXT, tank INTEGER, sex TEXT);")
+dbListTables(mydb)
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Molly', '1', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Molly', '1', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Tetra', '1', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Neon Tetra', '2', 'F');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Betta', '3', 'F');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Molly', '1', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Molly', '1', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Betta', '4', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Neon Tetra', '1', 'F');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Pleco', '1', 'F');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Neon Tetra', '2', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Pleco', '4', 'F');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Molly', '2', 'F');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Pleco', '3', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Tetra', '2', 'F');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Neon Tetra', '2', 'F');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Betta', '5', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Tetra', '2', 'F');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Pleco', '2', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Molly', '1', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Molly', '1', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Pleco', '5', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Tetra', '2', 'F');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Neon Tetra', '1', 'F');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Neon Tetra', '2', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Betta', '6', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Tetra', '2', 'F');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Pleco', '6', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Pleco', '2', 'M');")
+dbGetQuery(mydb, "INSERT INTO SQLfish (breed, tank, sex) VALUES ('Molly', '1', 'F');")
+dbReadTable(mydb, 'SQLfish')
+```
+```{r}
+dbGetQuery(mydb, "DROP TABLE IF EXISTS fish;")
+
+
+
+
+```
+
+# NULL Value
+```{r}
+#NULL is a state (similar to R), represents the lack of a value. But is not compatible with R backend so this code doesn't work as part of dbGetQuery()
+
+#This doesn't work because NULL is not a value
+SELECT * FROM test WHERE score = NULL;
+
+#Instead use
+SELECT * FROM test WHERE score is NULL;
+
+```
+
+# Constraints
+```{r}
+#Create table where student column *cannot* be NULL
+dbGetQuery(mydb,"CREATE TABLE test2 (
+  score INTEGER, 
+  student TEXT NOT NULL
+  );")
+
+dbGetQuery(mydb, "DROP TABLE IF EXISTS test2;")
+
+dbGetQuery(mydb,"CREATE TABLE test2 (
+   score INTEGER DEFAULT 0, 
+   student TEXT
+   );")
+
+dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES ('1', 'A');")
+dbGetQuery(mydb,"INSERT INTO test2 (student) VALUES ('B');")
+
+dbGetQuery(mydb, "SELECT * FROM test2;")
+
+dbGetQuery(mydb, "DROP TABLE IF EXISTS test2;")
+
+dbGetQuery(mydb,"CREATE TABLE test2 (
+  score INTEGER UNIQUE, 
+  student TEXT
+  );")
+
+dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES ('1', 'A');")
+
+#Error because of unique
+dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES ('1', 'A');")
+
+#NULL is exempt
+dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
+dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
+
+
+
+
+#EXERCISE 5
+#Recreate one of your toy data tables with the constraint that for one of the integer variables the default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+
+dbGetQuery(mydb,"CREATE TABLE fish2 (tank INTEGER DEFAULT 0, breed TEXT NOT NULL, sex TEXT NOT NULL);")
+dbReadTable(mydb, 'fish2')
+dbGetQuery(mydb,"INSERT INTO fish2 (tank, breed, sex) VALUES ('0', 'Molly', 'M');")
+dbGetQuery(mydb,"INSERT INTO fish2 (breed, sex) VALUES ('Tetra', 'F');")
+dbReadTable(mydb, 'fish2')
+```
+
+```{r}
+dbGetQuery(mydb, "DROP TABLE IF EXISTS fish2;")
+
+
+
+
+```
+
+# Adding a column with a default value
+```{r}
+
+#Add a column with default value 1
+dbGetQuery(mydb, "ALTER TABLE studentAssessment ADD email INTEGER DEFAULT 1 ")
+
+dbGetQuery(mydb, "SELECT * FROM studentAssessment LIMIT 10;")
+
+#Delete a column
+dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
+
+
+
+
+#EXERCISE 6
+#Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+dbGetQuery(mydb, "ALTER TABLE fish ADD breedinggroup INTEGER DEFAULT 3 ")
+dbReadTable(mydb, 'fish')
+```
+
+
+
+```{r}
+dbGetQuery(mydb, "ALTER TABLE fish DROP COLUMN breedinggroup;")
+
+
+```
+
+# ID Columns
+```{r}
+
+
+dbGetQuery(mydb,"CREATE TABLE test3 (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, #Not standard syntax
+  score INTEGER, 
+  student TEXT
+  );")
+
+dbGetQuery(mydb,"INSERT INTO test3 (score, student) VALUES (1, 'A');")
+dbGetQuery(mydb,"INSERT INTO test3 (score, student) VALUES (5, 'B');")
+
+dbGetQuery(mydb, "SELECT * FROM test3;")
+
+dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
+
+
+
+#EXERCISE 7
+#Create a new table with four variables and a primary key that is a sequential id value.
+
+dbGetQuery(mydb,"CREATE TABLE recess (
+period INTEGER AUTO_INCREMENT PRIMARY KEY, #Not standard syntax
+        class INTEGER, 
+        playground TEXT,
+        courts INTEGER);")
+dbReadTable(mydb, 'recess')
+dbGetQuery(mydb,"INSERT INTO recess (class, playground, courts) VALUES (1, 'Purple', 3);")
+dbGetQuery(mydb,"INSERT INTO recess (class, playground, courts) VALUES (4, 'Green', 2);")
+dbGetQuery(mydb,"INSERT INTO recess (class, playground, courts) VALUES (2, 'Yellow', 5);")
+dbReadTable(mydb, 'recess')
+```
+
+
+```{r}
+
+
+
+## Filtering (WHERE)
+
+
+#OR Statement
+dbGetQuery(mydb, "SELECT id_student, date_submitted FROM studentAssessment WHERE date_submitted > 550 OR date_submitted < 2 ORDER BY date_submitted DESC;")
+
+#AND Statement
+dbGetQuery(mydb, "SELECT id_student, date_submitted FROM studentAssessment WHERE date_submitted > 550 AND id_student = 325750 ORDER BY date_submitted DESC;")
+
+#LIKE
+dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE region LIKE '%Region%';")
+
+#Begin with 'Region'
+dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE region LIKE 'Region%';")
+
+#End with 'Region'
+dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE region LIKE '%Region';")
+
+#'c' is the second letter
+dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE region LIKE '_c%';")
+
+#IN
+dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE region IN ('Wales','Ireland');")
+
+
+
+#EXERCISE 8
+#Query one of your original toy data tables, for two different conditions.
+
+dbGetQuery(mydb, "SELECT tank FROM fish WHERE sex = 'M' AND breed LIKE '_e%';")
+```
+
+
+```{r}
+
+
+
+```
+
+## Removing Duplicates
+```{r}
+
+
+dbGetQuery(mydb, "SELECT DISTINCT region FROM studentInfo;")
+
+dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
+
+#EXERCISE 9
+#Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+
+dbGetQuery(mydb, "INSERT INTO playareas (Development, Location, Classroom) VALUES ('Pretend Play', 'Outdoor', '3');")
+dbReadTable(mydb, 'playareas')
+```
+
+
+```{r}
+
+dbGetQuery(mydb, "SELECT DISTINCT Development, Location, Classroom FROM playareas;")
+```
+
+
+```{r}
+
+
+## Conditional Expressions (non-standard)
+
+dbGetQuery(mydb, "CREATE TABLE booltest (a INTEGER, b INTEGER);")
+dbGetQuery(mydb, "INSERT INTO booltest VALUES (1, 0);")
+dbGetQuery(mydb, "SELECT * FROM booltest;")
+
+dbGetQuery(mydb,"SELECT
+  CASE WHEN a THEN 'true' ELSE 'false' END as boolA,
+  CASE WHEN b THEN 'true' ELSE 'false' END as boolB
+  FROM booltest")
+
+dbGetQuery(mydb,"SELECT
+  CASE a WHEN 1 THEN 'true' ELSE 'false' END as boolA,
+  CASE b WHEN 1 THEN 'true' ELSE 'false' END as boolB
+  FROM booltest")
+```
+
+#Relationships (JOIN) - *Slide*
+```{r}
+
+#Create two tables with matches and join them
+
+dbGetQuery(mydb, "CREATE TABLE orchards (orchardnumber INTEGER, town TEXT);")
+dbGetQuery(mydb, "CREATE TABLE apples (orchardnumber INTEGER, type TEXT);")
+
+dbGetQuery(mydb, "INSERT INTO orchards VALUES ( 1, 'queens');")
+dbGetQuery(mydb, "INSERT INTO orchards VALUES ( 2, 'brooklyn');")
+dbGetQuery(mydb, "INSERT INTO orchards VALUES ( 3, 'bronx');")
+dbGetQuery(mydb, "INSERT INTO orchards VALUES ( 4, 'manhattan');")
+
+dbGetQuery(mydb, "INSERT INTO apples VALUES ( 1, 'cortland');")
+dbGetQuery(mydb, "INSERT INTO apples VALUES ( 2, 'fuji');")
+dbGetQuery(mydb, "INSERT INTO apples VALUES ( 3, 'hcrisp');")
+dbGetQuery(mydb, "INSERT INTO apples VALUES ( 4, 'gala');")
+
+
+dbGetQuery(mydb, "SELECT * FROM orchards;")
+dbGetQuery(mydb, "SELECT * FROM apples;")
+
+dbGetQuery(mydb,"SELECT town AS orchards, type AS apples 
+           FROM orchards AS town 
+           JOIN apples AS type ON town.orchardnumber = type.orchardnumber")
+
+dbGetQuery(mydb,"SELECT town AS orchards, type AS apples 
+           FROM orchards AS town 
+           RIGHT JOIN apples AS type ON town.orchardnumber = type.orchardnumber")
+
+#Union
+dbGetQuery(mydb, "SELECT * FROM orchards
+           UNION
+           SELECT * FROM apples;")
+
+
+#EXERCISE 10
+# Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
+
+dbGetQuery(mydb, "ALTER TABLE fish ADD Classroom INTEGER DEFAULT 3 ")
+dbGetQuery(mydb, "UPDATE fish SET Classroom = '1' WHERE Tank = 2;")
+dbGetQuery(mydb, "UPDATE fish SET Classroom = '4' WHERE Tank = 1;")
+dbGetQuery(mydb, "UPDATE fish SET Classroom = '2' WHERE Tank = 6;")
+dbGetQuery(mydb, "UPDATE fish SET Classroom = '2' WHERE Tank = 5;")
+dbReadTable(mydb, 'fish')
+
+dbGetQuery(mydb,"SELECT Development, Location AS playareas, Tank AS fish 
+            FROM playareas AS Location
+            LEFT JOIN fish AS Tank ON Location.Classroom = Tank.Classroom")
+
+dbGetQuery(mydb, "SELECT Development, Location, Tank
+	          FROM playareas LEFT JOIN fish
+	          ON fish.Classroom = playareas.Classroom")
+
+dbGetQuery(mydb,"SELECT Development AS playareas, Tank AS fish 
+            FROM playareas AS Development
+            LEFT JOIN fish AS Tank ON Development.Classroom = Tank.Classroom")
+
+#I ran this also with two tables I created, because my toy data variables were much more confusing to apply, but both worked! Here's that code:
+
+dbGetQuery(mydb, "CREATE TABLE orchards (orchardnumber INTEGER, town TEXT);")
+dbGetQuery(mydb, "CREATE TABLE apples (orchardnumber INTEGER, type TEXT);")
+
+dbGetQuery(mydb, "INSERT INTO orchards VALUES ( 1, 'queens');")
+dbGetQuery(mydb, "INSERT INTO orchards VALUES ( 2, 'brooklyn');")
+dbGetQuery(mydb, "INSERT INTO orchards VALUES ( 3, 'bronx');")
+dbGetQuery(mydb, "INSERT INTO orchards VALUES ( 4, 'manhattan');")
+
+dbGetQuery(mydb, "INSERT INTO apples VALUES ( 1, 'cortland');")
+dbGetQuery(mydb, "INSERT INTO apples VALUES ( 2, 'fuji');")
+dbGetQuery(mydb, "INSERT INTO apples VALUES ( 3, 'hcrisp');")
+dbGetQuery(mydb, "INSERT INTO apples VALUES ( 4, 'gala');")
+
+dbGetQuery(mydb, "SELECT * FROM orchards;")
+dbGetQuery(mydb, "SELECT * FROM apples;")
+
+dbGetQuery(mydb,"SELECT town AS orchards, type AS apples 
+           FROM orchards AS town 
+           JOIN apples AS type ON town.orchardnumber = type.orchardnumber")
+
+dbGetQuery(mydb,"SELECT town AS orchards, type AS apples 
+           FROM orchards AS town 
+           RIGHT JOIN apples AS type ON town.orchardnumber = type.orchardnumber")
+
+dbGetQuery(mydb,"SELECT town AS orchards, type AS apples 
+            FROM orchards AS town
+            LEFT JOIN apples AS type ON town.orchardnumber = type.orchardnumber")
+```
+```{r}
+
+
+
+
+#Now disconnect from your database
+dbDisconnect(mydb)
+
+#Then return to your AWS console and:
+
+#1. Click on "Actions" and then "Stop"
+#2. Do NOT make a snapshot
+#3 Click on "Actions" again and click "Delete"
+#4. Unclick "Make a final snapshot"
+#5. Clicl "I acknowledge that upon instance deletion, automated backups, including system snapshots and point-in-time recovery, will no longer be available."
+#6. Type "delete me" into the field
+
+#Failure to follow these steps could result in charges to your credit card.
+
+
+```
+
