@@ -1,6 +1,6 @@
 ---
 title: "sql-workshop"
-author: "Charles Lang"
+author: "Yifei Zhang"
 output: html_document
 ---
 
@@ -16,7 +16,7 @@ library(RMySQL)
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-3.cvsve6xftlcb.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -33,6 +33,10 @@ studentAssessment <- read.csv("studentAssessment.csv", header = TRUE)
 #Course data
 courses <- read.csv("courses.csv", header = TRUE)
 studentRegistration <- read.csv("studentRegistration.csv", header = TRUE)
+
+##Load toy dataset
+sanfrancisco <-read.csv("sanfrancisco.csv",header=TRUE)
+amsterdam <- read.csv("amsterdam-house.csv",header=TRUE)
 ```
 
 ## Write data to the DB using the DBI package
@@ -52,9 +56,14 @@ dbListTables(mydb)
 #Read a particular table
 dbReadTable(mydb, 'studentInfo')
 
+```
+
+
+```{r}
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
-
+dbWriteTable(mydb, "sanfrancisco", sanfrancisco)
+dbWriteTable(mydb, "amsterdam", amsterdam)
 ```
 
 ## Getting into SQL - READING
@@ -80,10 +89,16 @@ dbGetQuery(mydb, "SELECT COUNT(score) FROM studentAssessment WHERE score > 50;")
 #Using an AND statement
 dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id_assessment = '1752';")
 
+
+```
+
+```{r}
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
-
+dbGetQuery(mydb,"SELECT availability_2019 AS availability_in_2019 FROM amsterdam ORDER BY availability_2019 DESC LIMIT 20")
+           
 #Read the other table according to a condition of one of the variables.
+dbGetQuery(mydb, "SELECT * FROM sanfrancisco WHERE price > 500;")
 
 ```
 
@@ -101,7 +116,7 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment;")
 #View inserted row
 dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;")
 
-#Add a row with missing values
+#Add a row with missing values ????
 dbGetQuery(mydb, "INSERT INTO studentAssessment (id_assessment, id_student, date_submitted) VALUES ('00001', '1', '20');")
 
 #View inserted row
@@ -120,10 +135,29 @@ dbGetQuery(mydb, "DELETE FROM studentAssessment WHERE id_student = 1;")
 
 dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;")
 
+
+```
+
+
+```{r}
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
+#Insert a new row to sanfrancisco leaving availability_2019 empty
+dbGetQuery(mydb, "INSERT INTO sanfrancisco (id, neighbourhood,room_type,price,	days_occupied_in_2018, minimum_nights,number_of_reviews,reviews_per_month) VALUES ('40092','Mission','Entire home/apt','117','0','30', '96', '0.96');")
 
+#Change one value in amsterdam
+dbGetQuery(mydb, "UPDATE amsterdam SET availability_2019 = '365' WHERE id = 2818;")
+
+#Display new tables
+dbGetQuery(mydb, "SELECT * FROM amsterdam;")
+dbGetQuery(mydb, "SELECT * FROM sanfrancisco;")
+
+#Delete the row inserted
+dbGetQuery(mydb, "DELETE FROM sanfrancisco WHERE id = 40092;")
+
+#Delete the row edited
+dbGetQuery(mydb, "DELETE FROM amsterdam WHERE id = 2818;")
 ```
 
 ## Add/Deleting Table
@@ -156,10 +190,44 @@ dbGetQuery(mydb, "SELECT * FROM test;") #This should produce an error since your
 #Delete a table if it exists
 dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it exists
 
+
+```
+
+
+```{r}
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
 
+#Creating a new table in SQL
+dbGetQuery(mydb,"CREATE TABLE san_francisco (
+  id INTEGER, 
+  neighbourhood TEXT,
+  room_type TEXT,
+  price INTEGER,
+  days_occupied_in_2018 INTEGER, 
+  minimum_nights INTEGER,
+  number_of_reviews FLOAT,
+  reviews_per_month INTEGER
+  );")
+
+dbListTables(mydb)
+
 ```
+```{r}
+#Inserting data into the table
+dbGetQuery(mydb, "INSERT INTO san_francisco VALUES (958,'Western Addition','Entire home/apt', 170,213,1,172,1.51);")
+dbGetQuery(mydb, "INSERT INTO san_francisco VALUES (5858,'Bernal Heights','Entire home/apt',235,0,30,112,0.96);")
+dbGetQuery(mydb, "INSERT INTO san_francisco VALUES (7918,'Haight Ashbury','Private room',65,0,32,	17,0.15);")
+dbGetQuery(mydb, "INSERT INTO san_francisco VALUES (8142,'Haight Ashbury','Private room',65,0,32,8,0.15);")
+
+#Display
+dbGetQuery(mydb, "SELECT * FROM san_francisco;")
+
+#Delete
+dbGetQuery(mydb, "DROP TABLE sanfrancisco;")
+```
+
+
 
 # NULL Value
 ```{r}
@@ -209,9 +277,35 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES ('1', 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
-#EXERCISE 5
-#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+```
 
+
+```{r}
+#EXERCISE 5
+#Recreate one of your toy data tables with the constraint that for one of the integer variables the default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+
+#Recreate
+dbGetQuery(mydb,"CREATE TABLE sanfrancisco_2 (
+  id INTEGER, 
+  neighbourhood TEXT,
+  room_type TEXT,
+  price INTEGER,
+  days_occupied_in_2018 INTEGER, 
+  minimum_nights INTEGER,
+  number_of_reviews FLOAT,
+  reviews_per_month INTEGER DEFAULT 0
+  );")
+
+#Insert some value 
+dbGetQuery(mydb,"INSERT INTO sanfrancisco_2 (id, neighbourhood,room_type,price,	days_occupied_in_2018, minimum_nights,number_of_reviews,reviews_per_month) VALUES ('1', 'Marina','Entire home/apt','127','0','21','2','NULL');")
+
+dbGetQuery(mydb,"INSERT INTO sanfrancisco_2 (id, neighbourhood,room_type,price,	days_occupied_in_2018, minimum_nights,number_of_reviews,reviews_per_month) VALUES ('40092','Mission','Entire home/apt','117','0','30', '96', 'NULL');")
+
+#Display
+dbGetQuery(mydb, "SELECT * FROM sanfrancisco_2;")
+
+#Delete
+dbGetQuery(mydb, "DROP TABLE IF EXISTS sanfrancisco_2;")
 ```
 
 
@@ -224,11 +318,22 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment LIMIT 10;")
 
 #Delete a column
 dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
-
-#EXERCISE 6
-#Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
 ```
 
+
+```{r}
+#EXERCISE 6
+#Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+#Add a column with default value 3
+dbGetQuery(mydb, "ALTER TABLE san_francisco ADD minimum_nights_2021 INTEGER DEFAULT 3 ")
+
+#Display
+dbGetQuery(mydb, "SELECT * FROM san_francisco;")
+
+#Delete a column
+dbGetQuery(mydb, "ALTER TABLE san_francisco DROP COLUMN minimum_nights_2021;")
+```
 
 # ID Columns
 ```{r}
@@ -245,8 +350,18 @@ dbGetQuery(mydb, "SELECT * FROM test3;")
 
 dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
+```
+
+
+```{r}
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+dbGetQuery(mydb,"CREATE TABLE sanfrancisco3 (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, 
+  neighbour TEXT,
+  ladtitude FLOAT, 
+  longtitude FLOAT
+  );")
 
 ```
 
@@ -275,9 +390,13 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 #IN
 dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE region IN ('Wales','Ireland');")
 
+```
+
+```{r}
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
-
+#reviews per month lagers than 3
+dbGetQuery(mydb, "SELECT neighbourhood,reviews_per_month,price FROM amsterdam WHERE reviews_per_month > 3 and price < 100 ORDER BY price DESC;")
 ```
 
 ## Removing Duplicates
@@ -286,9 +405,16 @@ dbGetQuery(mydb, "SELECT DISTINCT region FROM studentInfo;")
 
 dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
+```
+
+
+```{r}
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
 
+dbGetQuery(mydb,"INSERT INTO san_francisco (id, neighbourhood,room_type,price,	days_occupied_in_2018, minimum_nights,number_of_reviews,reviews_per_month) VALUES ('40092','Mission','Entire home/apt','117','0','30', '96', '0.96');")
+
+dbGetQuery(mydb, "SELECT DISTINCT neighbourhood FROM san_francisco;")
 ```
 
 ## Conditional Expressions (non-standard)
@@ -356,10 +482,32 @@ dbGetQuery(mydb, "SELECT * FROM left_table
            UNION
            SELECT * FROM right_table;")
 
+```
 
+```{r}
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
 
+#create a new toy table
+dbGetQuery(mydb,"CREATE TABLE sanfrancisco_2021 (id INTEGER,availability_2021 INTEGER);")
+
+
+dbGetQuery(mydb, "INSERT INTO sanfrancisco_2021 VALUES (958, 10);")
+dbGetQuery(mydb, "INSERT INTO sanfrancisco_2021 VALUES (5858, 20);")
+dbGetQuery(mydb, "INSERT INTO sanfrancisco_2021 VALUES (8142, 10);")
+dbGetQuery(mydb, "INSERT INTO sanfrancisco_2021 VALUES (8339, 20);")
+dbGetQuery(mydb, "INSERT INTO sanfrancisco_2021 VALUES (10251, 10);")
+dbGetQuery(mydb, "INSERT INTO sanfrancisco_2021 VALUES (17132, 20);")
+dbGetQuery(mydb, "INSERT INTO sanfrancisco_2021 VALUES (24723, 10);")
+dbGetQuery(mydb, "INSERT INTO sanfrancisco_2021 VALUES (23511, 20);")
+
+dbGetQuery(mydb, "SELECT * FROM sanfrancisco_2021;")
+
+#INNER JOIN
+dbGetQuery(mydb,"SELECT s1.neighbourhood AS neighbourhood, room_type, price,	days_occupied_in_2018, minimum_nights,number_of_reviews,s2.availability_2021 AS a_2021
+           FROM san_francisco AS s1
+           INNER JOIN sanfrancisco_2021 AS s2 
+           ON s1.id = s2.id")
 ```
 ```{r}
 #Now disconnect from your database
