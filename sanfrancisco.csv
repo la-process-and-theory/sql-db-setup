@@ -1,0 +1,30 @@
+id,neighbourhood,room_type,price,days_occupied_in_2018,minimum_nights,number_of_reviews,reviews_per_month,availability_2019
+958,Western Addition,Entire home/apt,170,213,1,172,1.51,74
+5858,Bernal Heights,Entire home/apt,235,0,30,112,0.96,365
+7918,Haight Ashbury,Private room,65,0,32,17,0.15,365
+8142,Haight Ashbury,Private room,65,0,32,8,0.15,365
+8339,Western Addition,Entire home/apt,785,276,7,27,0.24,89
+8567,Western Addition,Entire home/apt,255,206,2,31,0.27,20
+8739,Mission,Private room,139,284,1,631,5.54,129
+9225,Potrero Hill,Private room,135,26,1,434,3.91,342
+10251,Mission,Entire home/apt,265,18,3,307,2.73,303
+10578,Nob Hill,Entire home/apt,120,,30,18,0.21,365
+10819,Marina,Entire home/apt,218,,30,22,0.32,0
+10820,Haight Ashbury,Entire home/apt,177,,30,36,0.32,288
+10824,Western Addition,Entire home/apt,194,,30,14,0.17,347
+10832,Downtown/Civic Center,Entire home/apt,139,0,30,18,0.25,356
+12041,Haight Ashbury,Private room,85,0,32,6,0.07,365
+12042,Haight Ashbury,Private room,85,0,32,5,0.07,365
+12522,Castro/Upper Market,Private room,79,325,3,383,3.54,23
+12584,Inner Sunset,Entire home/apt,136,,30,16,0.21,365
+14125,Mission,Entire home/apt,215,28,3,97,0.9,278
+17132,South of Market,Entire home/apt,450,,35,14,0.14,219
+18231,Noe Valley,Entire home/apt,107,,30,60,0.58,129
+18904,Western Addition,Private room,110,288,3,350,4.1,74
+19040,Mission,Entire home/apt,198,,5,226,2.12,4
+21334,Nob Hill,Entire home/apt,125,302,30,118,1.13,325
+21914,Haight Ashbury,Private room,65,0,32,14,0.16,365
+23540,Mission,Entire home/apt,225,57,1,107,1.01,0
+23611,Bernal Heights,Private room,100,12,3,232,2.21,364
+23630,Castro/Upper Market,Entire home/apt,155,,3,340,3.29,235
+24390,Mission,Entire home/apt,95,,30,65,0.67,135

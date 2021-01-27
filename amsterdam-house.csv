@@ -1,0 +1,32 @@
+,id,neighbourhood,latitude,longitude,room_type,price,days_occupied_in_2018,minimum_nights,number_of_reviews,reviews_per_month,availability_2019
+0,2818,Oostelijk Havengebied - Indische Buurt,52.36575451,4.941419235,Private room,59,296,3,248,2.1,44
+1,3209,Westerpark,52.39022505,4.873924095,Entire home/apt,160,309,4,42,1.03,47
+2,20168,Centrum-Oost,52.36508703,4.893541008,Entire home/apt,80,224,1,233,2.18,198
+3,25428,Centrum-West,52.3731144,4.883668196,Entire home/apt,125,208,14,1,0.09,141
+4,27886,Centrum-West,52.38672732,4.89207807,Private room,150,318,2,171,2.03,199
+5,28658,Bos en Lommer,52.37534218,4.85728935,Private room,65,64,3,434,4.16,295
+6,28871,Centrum-West,52.36718681,4.890917797,Private room,75,184,2,215,2.13,137
+7,29051,Centrum-West,52.36772541,4.891511737,Private room,55,131,2,383,4.07,188
+8,31080,Zuid,52.35132054,4.848382899,Entire home/apt,219,,3,32,0.36,336
+9,41125,Centrum-West,52.37891477,4.883205056,Entire home/apt,180,349,3,76,0.78,11
+10,42970,Centrum-West,52.36781448,4.890012023,Private room,159,55,3,426,4.24,89
+11,43980,Zuid,52.35745628,4.861242085,Entire home/apt,100,80,28,61,0.62,10
+12,44129,Centrum-West,52.38071123,4.886104318,Entire home/apt,250,278,2,176,1.74,16
+13,44391,Centrum-Oost,52.37016999,4.914377827,Entire home/apt,200,,3,31,0.31,0
+14,45246,Westerpark,52.3776764,4.876178649,Entire home/apt,155,,3,79,0.79,253
+15,46386,De Pijp - Rivierenbuurt,52.35247026,4.90825444,Entire home/apt,150,,3,3,0.03,0
+16,47061,De Baarsjes - Oud-West,52.3679861,4.874469332,Entire home/apt,140,,2,167,1.67,0
+17,48076,Centrum-West,52.38042002,4.894534735,Entire home/apt,350,92,5,159,1.82,276
+18,49790,De Baarsjes - Oud-West,52.36266379,4.86103174,Entire home/apt,225,87,3,98,1.06,296
+19,50515,Bos en Lommer,52.3772724,4.839252563,Entire home/apt,120,208,3,12,0.21,79
+20,50518,Westerpark,52.38200613,4.878649621,Entire home/apt,125,,1,91,1.22,0
+21,50523,Centrum-West,52.3684079,4.884133705,Private room,115,126,2,213,2.21,206
+22,50570,Bos en Lommer,52.37773744,4.848911991,Entire home/apt,90,354,4,152,1.62,19
+23,52490,Oostelijk Havengebied - Indische Buurt,52.37004589,4.938691236,Private room,72,337,3,81,0.82,11
+24,53067,De Pijp - Rivierenbuurt,52.35339267,4.900637643,Private room,87,295,1,333,3.4,2
+25,53671,Westerpark,52.38905337,4.885588535,Private room,75,31,3,261,2.8,289
+26,53692,De Pijp - Rivierenbuurt,52.35348316,4.900490172,Private room,60,,3,219,2.4,47
+27,55256,Centrum-Oost,52.37125689,4.903513145,Private room,86,352,1,120,1.26,129
+28,55703,Bos en Lommer,52.37560816,4.858187468,Entire home/apt,250,1,3,3,0.07,0
+29,55709,Centrum-Oost,52.3589565,4.897259341,Entire home/apt,159,355,5,53,0.54,32
+30,55807,De Baarsjes - Oud-West,52.36965708,4.862025427,Private room,60,28,2,150,1.53,122
