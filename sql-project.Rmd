@@ -16,7 +16,7 @@ library(RMySQL)
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.cygkzmo7ce4u.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -40,6 +40,8 @@ studentRegistration <- read.csv("studentRegistration.csv", header = TRUE)
 #List the tables in the DB - should be zero
 dbListTables(mydb)
 
+dbGetQuery(mydb, "DROP TABLE IF EXISTS dataframe1, dataframe2, dataframe3, testdf;") 
+
 #Write a new table to the DB
 dbWriteTable(mydb, "studentInfo", studentInfo)
 dbWriteTable(mydb, "studentAssessment", studentAssessment)
@@ -55,6 +57,14 @@ dbReadTable(mydb, 'studentInfo')
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
 
+set.seed(10)
+df1 <- data.frame(x = rep(1:10,3)*1000, y = paste(sample(LETTERS, 30,  replace = TRUE), "is the output"), z = rep(letters, length.out = 30))
+df2 <- data.frame(xx = paste0(1:30, c("st", "nd", "rd", rep("th", 27))), yy = rep("day", 30), zz = paste(sample(1:100, 30, replace = TRUE), "points"))
+
+dbWriteTable(mydb, "dataframe1", df1, overwrite = TRUE)
+dbWriteTable(mydb, "dataframe2", df2, overwrite = TRUE)
+
+dbListTables(mydb)
 ```
 
 ## Getting into SQL - READING
@@ -83,7 +93,11 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
 
+dbGetQuery(mydb, "SELECT x AS 'Numbers', y, z FROM dataframe1 ORDER BY Numbers DESC LIMIT 20;") #SQL Standard says quotes for literal strings and double quotes for everything else but that conflicts with R
+
 #Read the other table according to a condition of one of the variables.
+
+dbGetQuery(mydb, "SELECT xx, yy, zz AS 'Points' FROM dataframe2 ORDER BY Points DESC LIMIT 25;")
 
 ```
 
@@ -123,6 +137,17 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
+dbGetQuery(mydb, "INSERT INTO dataframe1 (x, z) VALUES ('50000', 'hi');")
+dbGetQuery(mydb, "SELECT * FROM dataframe1 ORDER BY x DESC;")
+
+dbGetQuery(mydb, "UPDATE dataframe2 SET zz = '500 points' WHERE xx = '1st';")
+dbGetQuery(mydb, "SELECT * FROM dataframe2 ORDER BY zz;")
+
+dbGetQuery(mydb, "DELETE FROM dataframe1 WHERE z = 'hi';")
+dbGetQuery(mydb, "SELECT * FROM dataframe1 ORDER BY x DESC;")
+
+dbGetQuery(mydb, "DELETE FROM dataframe2 WHERE zz = '500 points';")
+dbGetQuery(mydb, "SELECT * FROM dataframe2 ORDER BY xx DESC;")
 
 ```
 
@@ -157,7 +182,16 @@ dbGetQuery(mydb, "SELECT * FROM test;") #This should produce an error since your
 dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it exists
 
 #EXERCISE 4
-#Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
+#Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table.
+
+dbGetQuery(mydb,"CREATE TABLE testdf (
+  x INTEGER, 
+  y TEXT,
+  z TEXT
+  );")
+dbGetQuery(mydb,"INSERT INTO testdf (x, y, z) SELECT x, y, z FROM dataframe1;")
+dbGetQuery(mydb, "SELECT * FROM testdf;")
+dbGetQuery(mydb, "DROP TABLE IF EXISTS dataframe1;") 
 
 ```
 
@@ -212,6 +246,19 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 #EXERCISE 5
 #Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
 
+dbGetQuery(mydb,"CREATE TABLE dataframe1 (
+   x INTEGER DEFAULT 0, 
+   y TEXT,
+   z TEXT
+   );")
+dbGetQuery(mydb,"INSERT INTO dataframe1 (x, y, z) SELECT x, y, z FROM testdf;")
+
+dbGetQuery(mydb,"INSERT INTO dataframe1 (y) VALUES (NULL);")
+dbGetQuery(mydb,"INSERT INTO dataframe1 (z) VALUES (NULL);")
+
+dbGetQuery(mydb, "SELECT * FROM dataframe1;")
+dbGetQuery(mydb, "DROP TABLE IF EXISTS dataframe1;") 
+
 ```
 
 
@@ -227,6 +274,10 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+dbGetQuery(mydb, "ALTER TABLE dataframe2 ADD new INTEGER DEFAULT 3 ")
+dbGetQuery(mydb, "SELECT * FROM dataframe2;")
+
+dbGetQuery(mydb, "ALTER TABLE dataframe2 DROP COLUMN new;")
 ```
 
 
@@ -247,6 +298,21 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+
+dbGetQuery(mydb,"CREATE TABLE dataframe3 (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, 
+  output TEXT, 
+  score INTEGER DEFAULT 2,
+  category TEXT
+  );")
+
+dbGetQuery(mydb,"INSERT INTO dataframe3 (output, score, category) VALUES ('B', 3, 'Plot');")
+dbGetQuery(mydb,"INSERT INTO dataframe3 (output, category) VALUES ('C', 'Graph');")
+dbGetQuery(mydb,"INSERT INTO dataframe3 (output) VALUES ('A');")
+
+dbGetQuery(mydb, "SELECT * FROM dataframe3;")
+
+dbGetQuery(mydb, "DROP TABLE IF EXISTS dataframe3;")
 
 ```
 
@@ -278,6 +344,9 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
 
+dbGetQuery(mydb, "SELECT x, y, z FROM testdf WHERE x >= 4000;")
+dbGetQuery(mydb, "SELECT x, y, z FROM testdf WHERE y LIKE 'G%';")
+
 ```
 
 ## Removing Duplicates
@@ -288,6 +357,9 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+
+dbGetQuery(mydb,"INSERT INTO dataframe2 (xx, yy, zz) VALUES ('9th', 'day', '88 points');")
+dbGetQuery(mydb, "SELECT DISTINCT xx, yy, zz FROM dataframe2;")
 
 ```
 
@@ -359,6 +431,36 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
+dbGetQuery(mydb, "ALTER TABLE testdf ADD id INTEGER")
+dbGetQuery(mydb, "ALTER TABLE dataframe2 ADD id INTEGER")
+
+dbGetQuery(mydb, "UPDATE testdf SET id = 1 WHERE x = 1000 AND z = 'a';")
+dbGetQuery(mydb, "UPDATE testdf SET id = 2 WHERE x = 2000 AND z = 'b';")
+dbGetQuery(mydb, "UPDATE testdf SET id = 3 WHERE x = 3000 AND z = 'c';")
+dbGetQuery(mydb, "UPDATE testdf SET id = 4 WHERE x = 4000 AND z = 'd';")
+dbGetQuery(mydb, "UPDATE testdf SET id = 5 WHERE x = 5000 AND z = 'e';")
+dbGetQuery(mydb, "UPDATE testdf SET id = 6 WHERE x = 6000 AND z = 'f';")
+dbGetQuery(mydb, "UPDATE testdf SET id = 7 WHERE x = 7000 AND z = 'g';")
+dbGetQuery(mydb, "UPDATE testdf SET id = 8 WHERE x = 8000 AND z = 'h';")
+dbGetQuery(mydb, "UPDATE testdf SET id = 9 WHERE x = 9000 AND z = 'i';")
+dbGetQuery(mydb, "UPDATE testdf SET id = 10 WHERE x = 10000 AND z = 'j';")
+dbGetQuery(mydb, "UPDATE testdf SET id = 11 WHERE x = 1000 AND z = 'k';")
+dbGetQuery(mydb, "UPDATE testdf SET id = 12 WHERE x = 2000 AND z = 'l';")
+
+dbGetQuery(mydb, "UPDATE dataframe2 SET id = 5 WHERE xx = '1st';")
+dbGetQuery(mydb, "UPDATE dataframe2 SET id = 6 WHERE xx = '2nd';")
+dbGetQuery(mydb, "UPDATE dataframe2 SET id = 7 WHERE xx = '3rd';")
+dbGetQuery(mydb, "UPDATE dataframe2 SET id = 8 WHERE xx = '4th';")
+dbGetQuery(mydb, "UPDATE dataframe2 SET id = 9 WHERE xx = '5th';")
+dbGetQuery(mydb, "UPDATE dataframe2 SET id = 10 WHERE xx = '6th';")
+dbGetQuery(mydb, "UPDATE dataframe2 SET id = 11 WHERE xx = '7th';")
+dbGetQuery(mydb, "UPDATE dataframe2 SET id = 12 WHERE xx = '8th';")
+dbGetQuery(mydb, "UPDATE dataframe2 SET id = 1 WHERE xx = '9th';")
+
+dbGetQuery(mydb,"SELECT l.x, l.y AS testdf, r.xx, r.zz AS dataframe2 
+           FROM testdf AS l 
+           RIGHT JOIN dataframe2 AS r ON l.id = r.id")
+
 
 ```
 ```{r}
