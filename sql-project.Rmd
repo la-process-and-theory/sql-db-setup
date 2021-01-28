@@ -1,6 +1,6 @@
 ---
 title: "sql-workshop"
-author: "Charles Lang"
+author: "Borui Yu"
 output: html_document
 ---
 
@@ -16,7 +16,7 @@ library(RMySQL)
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.ckbtlgvkafhg.us-east-1.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -54,7 +54,13 @@ dbReadTable(mydb, 'studentInfo')
 
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
-
+toydata1 <- read.csv("toydata1.csv", header = TRUE)
+toydata2 <- read.csv("toydata2.csv", header = TRUE)
+dbRemoveTable(mydb, "toydata1")
+dbRemoveTable(mydb, "toydata2")
+dbWriteTable(mydb, "toydata1", toydata1)
+dbWriteTable(mydb, "toydata2", toydata2)
+dbListTables(mydb)
 ```
 
 ## Getting into SQL - READING
@@ -82,8 +88,10 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
+dbGetQuery(mydb, "SELECT Model AS 'ModelName', Year, Color FROM toydata2 ORDER BY Year DESC LIMIT 20;")
 
 #Read the other table according to a condition of one of the variables.
+dbGetQuery(mydb, "SELECT COUNT(*) FROM toydata1 WHERE Price < 30;")
 
 ```
 
@@ -122,8 +130,14 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
-
-
+dbGetQuery(mydb, "SELECT COUNT(*) FROM toydata1;")
+dbGetQuery(mydb, "INSERT INTO toydata1 (Name, Price) VALUES ('CE', '30');")
+dbGetQuery(mydb, "SELECT COUNT(*) FROM toydata1;")
+dbGetQuery(mydb, "SELECT * FROM toydata1;")
+dbGetQuery(mydb, "UPDATE toydata2 SET Color = 'Y' WHERE Model = 'A20';")
+dbGetQuery(mydb, "SELECT * FROM toydata2;")
+dbGetQuery(mydb, "DELETE FROM toydata1 WHERE Name = 'CE';")
+dbGetQuery(mydb, "DELETE FROM toydata2 WHERE Model = 'A20';")
 ```
 
 ## Add/Deleting Table
@@ -158,7 +172,26 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
-
+dbGetQuery(mydb, "CREATE TABLE toydataNew (
+           Name TEXT,
+           Price INTEGER,
+           Sales INTEGER
+);")
+dbListTables(mydb)
+dbGetQuery(mydb, "INSERT INTO toydataNew Values('AA', 10, 1000);")
+dbGetQuery(mydb, "INSERT INTO toydataNew Values('BB', 20, 3000);")
+dbGetQuery(mydb, "INSERT INTO toydataNew Values('CC', 30, 2000);")
+dbGetQuery(mydb, "INSERT INTO toydataNew Values('DD', 40, 1500);")
+dbGetQuery(mydb, "INSERT INTO toydataNew Values('AE', 10, 3000);")
+dbGetQuery(mydb, "INSERT INTO toydataNew Values('BF', 20, 1000);")
+dbGetQuery(mydb, "INSERT INTO toydataNew Values('CG', 30, 1500);")
+dbGetQuery(mydb, "INSERT INTO toydataNew Values('DH', 40, 3000);")
+dbGetQuery(mydb, "INSERT INTO toydataNew Values('AI', 10, 2000);")
+dbGetQuery(mydb, "INSERT INTO toydataNew Values('BJ', 20, 1500);")
+dbGetQuery(mydb, "SELECT * FROM toydataNew;")
+dbGetQuery(mydb, "DROP TABLE toydata1;")
+dbGetQuery(mydb, "DROP TABLE IF EXISTS toydata1;")
+dbListTables(mydb)
 ```
 
 # NULL Value
@@ -210,8 +243,16 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
 #EXERCISE 5
-#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
-
+#Recreate one of your toy data tables with the constraint that for one of the integer variables the default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+dbGetQuery(mydb,"CREATE TABLE toydataNew2 (
+   Model TEXT, 
+   Year INTEGER DEFAULT 0,
+   Color TEXT
+   );")
+dbGetQuery(mydb,"INSERT INTO toydataNew2 (Model, Year, Color) VALUES ('A1', NULL, 'R');")
+dbGetQuery(mydb,"INSERT INTO toydataNew2 (Model, Year, Color) VALUES ('A2', NULL, 'B');")
+dbGetQuery(mydb, "SELECT * FROM toydataNew2;")
+dbGetQuery(mydb, "DROP TABLE IF EXISTS toydataNew2;")
 ```
 
 
@@ -227,6 +268,9 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+dbGetQuery(mydb, "ALTER TABLE toydata2 ADD Owner INTEGER DEFAULT 3;")
+dbGetQuery(mydb, "SELECT * FROM toydata2;")
+dbGetQuery(mydb, "ALTER TABLE toydata2 DROP COLUMN Owner;")
 ```
 
 
@@ -247,6 +291,13 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+dbGetQuery(mydb,"CREATE TABLE testNew (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, 
+  model TEXT,
+  year INTEGER, 
+  owner TEXT,
+  color TEXT
+  );")
 
 ```
 
@@ -277,7 +328,7 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
-
+dbGetQuery(mydb, "SELECT Model, Year, Color FROM toydata2 WHERE Color LIKE '%Y%' AND Year LIKE '19%';")
 ```
 
 ## Removing Duplicates
@@ -288,6 +339,10 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+dbGetQuery(mydb,"INSERT INTO toydata2 (Model, Year, Color) VALUES ('A1', '1981', 'R');")
+
+#A20 is missing because I deleted it for a previous exercise
+dbGetQuery(mydb, "SELECT DISTINCT Model FROM toydata2;")
 
 ```
 
@@ -358,8 +413,19 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 
 #EXERCISE 10
-# Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
+# Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other.
+dbListTables(mydb)
 
+#I realized that I already dropped the original table "toydata1" for EXERCISE 4, this is "toydataNew" with the exact first 10 values of "toydata1".
+dbGetQuery(mydb, "SELECT * FROM toydataNew;")
+dbGetQuery(mydb, "ALTER TABLE toydataNew ADD id INTEGER AUTO_INCREMENT PRIMARY KEY;")
+
+dbGetQuery(mydb, "SELECT * FROM toydata2;")
+dbGetQuery(mydb, "ALTER TABLE toydata2 ADD id INTEGER AUTO_INCREMENT PRIMARY KEY;")
+
+dbGetQuery(mydb,"SELECT l.Name AS left_table, r.Model AS right_table 
+           FROM toydataNew AS l 
+           JOIN toydata2 AS r ON l.id = r.id")
 ```
 ```{r}
 #Now disconnect from your database
