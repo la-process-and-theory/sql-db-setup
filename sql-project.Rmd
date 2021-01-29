@@ -13,10 +13,10 @@ Before you follow the directions below, please take a screenshot of your AWS con
 library(DBI)
 library(RMySQL)
 
-db_user <- 'admin'
+db_user <- 'admin' 
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.cedh4aguy6n7.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -26,17 +26,21 @@ summary(mydb)
 
 ## Load OU Data
 ```{r}
+#setwd("~/Documents/HUDK4051/sql-db-setup/")
+
 #Student demographic data
-studentInfo <- read.csv("studentInfo.csv", header = TRUE)
+studentInfo <- read.csv("~/Documents/HUDK4051/sql-db-setup/studentInfo.csv", header = TRUE)
 #Student assessment data
-studentAssessment <- read.csv("studentAssessment.csv", header = TRUE)
+studentAssessment <- read.csv("~/Documents/HUDK4051/sql-db-setup/studentAssessment.csv", header = TRUE)
 #Course data
-courses <- read.csv("courses.csv", header = TRUE)
-studentRegistration <- read.csv("studentRegistration.csv", header = TRUE)
+courses <- read.csv("~/Documents/HUDK4051/sql-db-setup/courses.csv", header = TRUE)
+#Student enrollment
+studentRegistration <- read.csv("~/Documents/HUDK4051/sql-db-setup/studentRegistration.csv", header = TRUE)
 ```
 
 ## Write data to the DB using the DBI package
 ```{r}
+
 #List the tables in the DB - should be zero
 dbListTables(mydb)
 
@@ -53,7 +57,45 @@ dbListTables(mydb)
 dbReadTable(mydb, 'studentInfo')
 
 #EXERCISE 1
-#Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
+#Make two toy data sets with at least three variables and at least 30 rowseach in them. Have dataframes to your whatever you like.Have a mix of numeric and character variables. Transfer these SQL database using the DBI commands. Name the tables
+
+#iris
+# Load iris
+data("iris")
+
+# It contains 150 observations and 5 variables
+dim(iris)
+head(iris)
+
+# Trim to 30 observations and 3 variables
+IRIS <- iris[1:30, 3:5 ]
+dim(IRIS)
+head(IRIS)
+
+# Rename IRIS columns
+names(IRIS) <- c("petal_length", "petal_width", "species")
+names(IRIS)
+# Write Iris table to the DB
+dbWriteTable(mydb, "IRIS", IRIS)
+
+#ToothGrowth
+# Load ToothGrowth
+data("ToothGrowth")
+
+# It contains 60 observations and 3 variables
+dim(ToothGrowth)
+head(ToothGrowth)
+
+# Trim to 30 observations and 3 variables
+Tooth <- ToothGrowth[1:30,]
+dim(Tooth)
+head(Tooth)
+
+#Write Tooth table to the DB
+dbWriteTable(mydb, "Tooth", Tooth)
+#List tables to see that tables "IRIS" and "Tooth" were added
+dbListTables(mydb)
+
 
 ```
 
@@ -83,7 +125,14 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
 
-#Read the other table according to a condition of one of the variables.
+#Rename IRIS column "petal_width" to "pw"
+# NOT WORKING dbGetQuery(mydb, "EXEC SP_RENAME 'mydb.IRIS.petal_width', 'pw', 'COLUMN';")
+
+#Order "petal_width" in descending order and the output is limited to the first 20 rows.
+dbGetQuery(mydb, "SELECT * FROM IRIS ORDER BY petal_width DESC LIMIT 20;")
+
+#Read the Tooth table according to a condition of one of the variables.
+dbGetQuery(mydb, "SELECT * FROM Tooth WHERE len > 25;")
 
 ```
 
@@ -123,6 +172,22 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
+#Insert a new row in "IRIS" data table leaving one variable empty. 
+dbGetQuery(mydb, "INSERT INTO IRIS (petal_length, petal_width) VALUES ('1.4', '0.2');")
+#Display the new "IRIS" table
+dbGetQuery(mydb, "SELECT * FROM IRIS ORDER BY petal_length LIMIT 10;")
+
+#Change one value in "Tooth" table.
+dbGetQuery(mydb, "UPDATE Tooth SET dose = '8.0' WHERE len = 4.2;")
+#Display the new "Tooth" table
+dbGetQuery(mydb, "SELECT * FROM Tooth ORDER BY len LIMIT 10;")
+
+
+#Delete the inserted row from "IRIS".
+dbGetQuery(mydb, "DELETE FROM IRIS WHERE species IS NULL;")
+#Delete the edited row from "Tooth".
+dbGetQuery(mydb, "DELETE FROM Tooth WHERE dose = 8.0;")
+
 
 ```
 
@@ -158,6 +223,18 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
+
+#Creating a new table in SQL
+dbGetQuery(mydb, "CREATE TABLE Iris LIKE IRIS;")
+dbListTables(mydb)
+
+#Inserting data into the table
+dbGetQuery(mydb, "INSERT INTO Iris SELECT * FROM IRIS;")
+# Display your new table
+dbGetQuery(mydb, "SELECT * FROM Iris;")
+
+# Delete the original table.
+dbGetQuery(mydb, "DROP TABLE IRIS;")
 
 ```
 
@@ -210,7 +287,29 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
 #EXERCISE 5
-#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+#Recreate one of your toy data tables with the constraint that for one of the integer variables the default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.
+
+#Creating a new table in SQL
+dbGetQuery(mydb, "CREATE TABLE Practice LIKE Iris;")
+dbListTables(mydb)
+
+#Inserting data into the table
+dbGetQuery(mydb, "INSERT INTO Practice SELECT * FROM Iris;")
+
+#For one of the integer variables the default value will be zero.
+dbGetQuery(mydb, "UPDATE Practice SET petal_length = '0';")
+
+#Display your new table
+dbGetQuery(mydb, "SELECT * FROM Practice;")
+
+#Test your table by inserting some empty values.
+dbGetQuery(mydb, "INSERT INTO Practice VALUES ( NULL, NULL, NULL, NULL );")
+
+#Display your new table
+dbGetQuery(mydb, "SELECT * FROM Practice ORDER BY petal_length ASC LIMIT 10;")
+
+# Delete the table.
+dbGetQuery(mydb, "DROP TABLE Practice;") 
 
 ```
 
@@ -227,6 +326,28 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+#Creating a new table in SQL
+dbGetQuery(mydb, "CREATE TABLE Practice LIKE Tooth;")
+dbListTables(mydb)
+
+#Inserting data into the table
+dbGetQuery(mydb, "INSERT INTO Practice SELECT * FROM Tooth;")
+
+#Add a column with default value 3
+dbGetQuery(mydb, "ALTER TABLE Practice ADD age INTEGER DEFAULT 3 ")
+
+#Display your new table
+dbGetQuery(mydb, "SELECT * FROM Practice;")
+
+#Delete this column.
+dbGetQuery(mydb, "ALTER TABLE Practice DROP COLUMN age;")
+dbGetQuery(mydb, "SELECT * FROM Practice;")
+
+# Delete the table.
+dbGetQuery(mydb, "DROP TABLE Practice;")
+
+
 ```
 
 
@@ -247,6 +368,26 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+
+dbGetQuery(mydb,"CREATE TABLE Practice (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, #Not standard syntax
+  Brand TEXT,
+  Model TEXT,
+  Cylinders INTEGER,
+  Price TEXT
+  );")
+
+dbGetQuery(mydb,"INSERT INTO Practice (Brand, Model, Cylinders, Price) VALUES ('Toyota', 'Land Cruiser', 8, '$85,565');")
+dbGetQuery(mydb,"INSERT INTO Practice (Brand, Model, Cylinders, Price) VALUES ('Jeep', 'Wrangler', 6, '$29,710');")
+dbGetQuery(mydb,"INSERT INTO Practice (Brand, Model, Cylinders, Price) VALUES ('Land Rover', 'Defender 90', 4, '$46,100');")
+dbGetQuery(mydb,"INSERT INTO Practice (Brand, Model, Cylinders, Price) VALUES ('Mercedes-Benz', 'G-Class', 8, '$131,750');")
+
+#Display your new table
+dbGetQuery(mydb, "SELECT * FROM Practice;")
+
+# Delete the table.
+dbGetQuery(mydb, "DROP TABLE IF EXISTS Practice;")
+
 
 ```
 
@@ -276,7 +417,14 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE region IN ('Wales','Ireland');")
 
 #EXERCISE 8
-#Query one of your original toy data tables, for two different conditions. 
+#Query one of your original toy data tables, for two different conditions.
+
+#Condition 1
+dbGetQuery(mydb, "SELECT len, dose FROM Tooth WHERE dose > 0.5 OR len > 10 ORDER BY len DESC;")
+
+#Condition 2
+dbGetQuery(mydb, "SELECT len, dose FROM Tooth WHERE dose < 2 AND len > 5
+ORDER BY len ASC;")
 
 ```
 
@@ -288,6 +436,15 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+
+#Insert a duplicate row
+dbGetQuery(mydb,"INSERT INTO Tooth (len, supp, dose) VALUES (5.2, 'VC', 0.5);")
+
+#Display your new table
+dbGetQuery(mydb, "SELECT * FROM Tooth ORDER BY len ASC;")
+
+#Query the table without including duplicates.
+dbGetQuery(mydb, "SELECT DISTINCT len, supp, dose FROM Tooth ORDER BY len ASC;")
 
 ```
 
@@ -358,9 +515,101 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 
 #EXERCISE 10
-# Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
+# Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other.
+
+#List tables in DB
+dbListTables(mydb)
+
+# Delete 'Iris' & 'Tooth' tables
+dbGetQuery(mydb, "DROP TABLE IF EXISTS Iris;") 
+dbGetQuery(mydb, "DROP TABLE IF EXISTS Tooth;") 
+
+#Reload tables
+#iris
+# Load iris
+data("iris")
+
+# It contains 150 observations and 5 variables
+dim(iris)
+head(iris)
+
+# Trim to 30 observations and 3 variables
+Iris <- iris[1:30, 3:5 ]
+dim(Iris)
+head(Iris)
+
+# Rename Iris columns
+names(Iris) <- c("petal_length", "petal_width", "species")
+names(Iris)
+
+# Write Iris table to the DB
+dbWriteTable(mydb, "Iris", Iris)
+
+#ToothGrowth
+# Load ToothGrowth
+data("ToothGrowth")
+
+# It contains 60 observations and 3 variables dim(ToothGrowth)
+head(ToothGrowth)
+
+# Trim to 30 observations and 3 variables
+Tooth <- ToothGrowth[1:30,]
+dim(Tooth)
+head(Tooth)
+
+#Write Tooth table to the DB 
+dbWriteTable(mydb, "Tooth", Tooth)
+
+#Create a common id variable in your two toy data tables
+dbGetQuery(mydb, "ALTER TABLE Iris
+    ADD id INTEGER,
+    ADD description TEXT;")
+dbGetQuery(mydb, "ALTER TABLE Tooth
+    ADD id INTEGER,
+    ADD description TEXT;")
+
+#Display your new table
+dbGetQuery(mydb, "SELECT * FROM Iris;")
+dbGetQuery(mydb, "SELECT * FROM Tooth;")
+dbGetQuery(mydb, "INSERT INTO Iris (id, description) VALUES ( 1, 'left 01');")
+dbGetQuery(mydb, "INSERT INTO Iris (id, description) VALUES ( 2, 'left 02');")
+dbGetQuery(mydb, "INSERT INTO Iris (id, description) VALUES ( 3, 'left 03');")
+dbGetQuery(mydb, "INSERT INTO Iris (id, description) VALUES ( 4, 'left 04');")
+dbGetQuery(mydb, "INSERT INTO Iris (id, description) VALUES ( 5, 'left 05');")
+dbGetQuery(mydb, "INSERT INTO Iris (id, description) VALUES ( 6, 'left 06');")
+
+dbGetQuery(mydb, "INSERT INTO Iris (id, description) VALUES ( 7, 'left 07');")
+dbGetQuery(mydb, "INSERT INTO Iris (id, description) VALUES ( 8, 'left 08');")
+dbGetQuery(mydb, "INSERT INTO Iris (id, description) VALUES ( 9, 'left 09');")
+dbGetQuery(mydb, "INSERT INTO Tooth (id, description) VALUES ( 6, 'left 06');")
+dbGetQuery(mydb, "INSERT INTO Tooth (id, description) VALUES ( 7, 'left 07');")
+dbGetQuery(mydb, "INSERT INTO Tooth (id, description) VALUES ( 8, 'left 08');")
+dbGetQuery(mydb, "INSERT INTO Tooth (id, description) VALUES ( 9, 'left 09');")
+dbGetQuery(mydb, "INSERT INTO Tooth (id, description) VALUES ( 10, 'left 10');")
+dbGetQuery(mydb, "INSERT INTO Tooth (id, description) VALUES ( 11, 'left 11');")
+dbGetQuery(mydb, "INSERT INTO Tooth (id, description) VALUES ( 12, 'left 12');")
+dbGetQuery(mydb, "INSERT INTO Tooth (id, description) VALUES ( 13, 'left 13');")
+dbGetQuery(mydb, "INSERT INTO Tooth (id, description) VALUES ( 14, 'left 14');")
+
+#Then join those tables so that your query returns all the values from one table and only those that match from the other
+dbGetQuery(mydb,"SELECT l.description AS Iris, r.description AS Tooth FROM Iris AS l JOIN Tooth AS r ON l.id = r.id")
+dbGetQuery(mydb,"SELECT l.description AS Iris, r.description AS Tooth FROM Iris AS l RIGHT JOIN Tooth AS r ON l.id = r.id")
+dbGetQuery(mydb,"SELECT l.description AS Iris, r.description AS Tooth FROM Iris AS l LEFT JOIN Tooth AS r ON l.id = r.id")
+
+#Union
+dbGetQuery(mydb, "SELECT * FROM Iris
+           UNION
+           SELECT * FROM Tooth;")
+
+#Display your new table
+dbGetQuery(mydb, "SELECT * FROM Iris;")
+dbGetQuery(mydb, "SELECT * FROM Tooth;")
+
+#List tables in DB
+dbListTables(mydb)
 
 ```
+
 ```{r}
 #Now disconnect from your database
 dbDisconnect(mydb)
