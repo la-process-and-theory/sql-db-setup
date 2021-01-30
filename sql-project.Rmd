@@ -1,6 +1,6 @@
 ---
 title: "sql-workshop"
-author: "Charles Lang"
+author: Paolo Rivas
 output: html_document
 ---
 
@@ -16,7 +16,7 @@ library(RMySQL)
 db_user <- 'admin'
 db_password <- 'testsql!'
 db_name <- 'oudb'
-db_host <- 'PASTE YOUR ENDPOINT HERE'
+db_host <- 'database-1.c5orweyv8ofj.us-east-1.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -55,14 +55,28 @@ dbReadTable(mydb, 'studentInfo')
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
 
+student_info_3V <- studentInfo
+myNewVars<- c('id_student', 'gender', 'studied_credits')
+My_New_data1 <- student_info_3V[myNewVars]
+
+dbWriteTable(mydb, "My_New_data1", My_New_data1)
+
+student_Assessment_3V <- studentAssessment
+myNewVars2 <- c('id_student', 'date_submitted', 'score')
+My_New_data2 <- student_Assessment_3V[myNewVars2] 
+
+dbWriteTable(mydb, "My_New_data2", My_New_data2)
+
+dbListTables(mydb)
+
 ```
 
 ## Getting into SQL - READING
 ```{r}
 #Query a portion of the database (always returns dataframe)
-dbGetQuery(mydb, "SELECT * FROM studentInfo LIMIT 10;")
+dbGetQuery(mydb, "SELECT * FROM studentInfo LIMIT 10;") # row count
 
-dbGetQuery(mydb, "SELECT * FROM studentInfo ORDER BY id_student LIMIT 10;")
+dbGetQuery(mydb, "SELECT * FROM studentInfo ORDER BY id_student LIMIT 10;") #order by students
 
 dbGetQuery(mydb, "SELECT id_student, gender FROM studentInfo ORDER BY id_student DESC LIMIT 10;") #Order listed will be reflected in order in table
 
@@ -83,7 +97,11 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
 
+dbGetQuery(mydb, "SELECT id_student AS 'Student ID', gender, studied_credits FROM My_New_data1 ORDER BY id_student DESC LIMIT 20;")
+
 #Read the other table according to a condition of one of the variables.
+dbGetQuery(mydb, "SELECT score FROM My_New_data2 WHERE score > 50;")
+
 
 ```
 
@@ -105,7 +123,7 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 dbGetQuery(mydb, "INSERT INTO studentAssessment (id_assessment, id_student, date_submitted) VALUES ('00001', '1', '20');")
 
 #View inserted row
-dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;")
+dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;") 
 
 #Update a row
 dbGetQuery(mydb, "UPDATE studentAssessment SET score = '20' WHERE id_student = 1;")
@@ -123,6 +141,17 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
 
+#part1
+dbGetQuery(mydb, "SELECT COUNT(*) FROM My_New_data1;")
+dbGetQuery(mydb, "INSERT INTO My_New_data1 (id_student, gender) VALUES ('12334', 'M');")
+dbGetQuery(mydb, "SELECT COUNT(*) FROM My_New_data1;")
+dbGetQuery(mydb, "SELECT * FROM My_New_data1;")
+#part2
+dbGetQuery(mydb, "UPDATE My_New_data2 SET score = '32' WHERE id_student = '38053';")
+dbGetQuery(mydb, "SELECT * FROM My_New_data2;")
+#part3
+dbGetQuery(mydb, "DELETE FROM My_New_data1 WHERE id_student = '12334';")
+dbGetQuery(mydb, "DELETE FROM My_New_data2 WHERE 'id_student' = '38053';")
 
 ```
 
@@ -144,7 +173,7 @@ dbGetQuery(mydb, "INSERT INTO test VALUES ( 9, 'Frank' );")
 dbGetQuery(mydb, "SELECT * FROM test;")
 
 #Inserting a NULL row
-dbGetQuery(mydb, "INSERT INTO test DEFAULT VALUES;") #Will not work use instead:
+#dbGetQuery(mydb, "INSERT INTO test DEFAULT VALUES;") #Will not work use instead:
 
 dbGetQuery(mydb,"INSERT INTO test (score, student) SELECT score, id_student FROM studentAssessment;")
 
@@ -158,6 +187,33 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;") #No error since it is only if it 
 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
+
+dbGetQuery(mydb, "CREATE TABLE NewDataTable (
+           id_student TEXT,
+           date_submitted INTEGER, 
+           score INTEGER
+);")
+dbListTables(mydb)
+dbGetQuery(mydb, "INSERT INTO NewDataTable Values('123', 10, 100);")
+dbGetQuery(mydb, "INSERT INTO NewDataTable Values('124', 20, 300);")
+dbGetQuery(mydb, "INSERT INTO NewDataTable Values('125', 30, 200);")
+dbGetQuery(mydb, "INSERT INTO NewDataTable Values('126', 40, 150);")
+dbGetQuery(mydb, "INSERT INTO NewDataTable Values('127', 10, 300);")
+dbGetQuery(mydb, "INSERT INTO NewDataTable Values('128', 20, 100);")
+dbGetQuery(mydb, "INSERT INTO NewDataTable Values('129', 30, 150);")
+dbGetQuery(mydb, "INSERT INTO NewDataTable Values('130', 40, 300);")
+dbGetQuery(mydb, "INSERT INTO NewDataTable Values('131', 10, 200);")
+dbGetQuery(mydb, "INSERT INTO NewDataTable Values('132', 20, 150);")
+dbGetQuery(mydb, "INSERT INTO NewDataTable Values('133', 20, 130);")
+dbGetQuery(mydb, "SELECT * FROM NewDataTable;")
+#drop table 
+
+#Disclaimer: I am leaving the code for dropping in # marks beacuse I've notice that I will need those tables for other excersises, particularly ex. 9. So Won't drop them for now, but that is how you do it.
+
+#dbGetQuery(mydb, "DROP TABLE My_New_data2;")
+#dbGetQuery(mydb, "DROP TABLE IF EXISTS My_New_data2;")
+
+dbListTables(mydb)
 
 ```
 
@@ -212,6 +268,17 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 #EXERCISE 5
 #Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
 
+dbGetQuery(mydb,"CREATE TABLE NewDataTable2 (
+   id_student TEXT, 
+   gender TEXT,
+   student_credits INTEGER DEFAULT 0
+   );")
+dbGetQuery(mydb,"INSERT INTO NewDataTable2 (id_student, gender, student_credits) VALUES ('1243', 'M', NULL);")
+dbGetQuery(mydb,"INSERT INTO NewDataTable2 (id_student, gender, student_credits) VALUES ('1244', 'F', '77');")
+dbGetQuery(mydb, "SELECT * FROM NewDataTable2;")
+dbGetQuery(mydb, "DROP TABLE IF EXISTS NewDataTable2;")
+
+
 ```
 
 
@@ -227,6 +294,10 @@ dbGetQuery(mydb, "ALTER TABLE studentAssessment DROP COLUMN email;")
 
 #EXERCISE 6
 #Add a column to one of your toy data tables with a default value of 3. Display your new table. Delete this column.
+
+dbGetQuery(mydb, "ALTER TABLE My_New_data1 ADD section INTEGER DEFAULT 3;")
+dbGetQuery(mydb, "SELECT * FROM My_New_data1;")
+dbGetQuery(mydb, "ALTER TABLE My_New_data1 DROP COLUMN section;")
 ```
 
 
@@ -247,6 +318,14 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test3;")
 
 #EXERCISE 7
 #Create a new table with four variables and a primary key that is a sequential id value.
+
+dbGetQuery(mydb,"CREATE TABLE TableTrial (
+  id INTEGER AUTO_INCREMENT PRIMARY KEY, 
+  Adress TEXT,
+  Zipcode INTEGER, 
+  Celphone TEXT,
+  Country TEXT
+  );")
 
 ```
 
@@ -278,6 +357,8 @@ dbGetQuery(mydb, "SELECT id_student, gender, region FROM studentInfo WHERE regio
 #EXERCISE 8
 #Query one of your original toy data tables, for two different conditions. 
 
+dbGetQuery(mydb, "SELECT id_student, gender, studied_credits FROM My_New_data1 WHERE gender LIKE '%F%' AND studied_credits LIKE '%60%';")
+
 ```
 
 ## Removing Duplicates
@@ -288,6 +369,9 @@ dbGetQuery(mydb, "SELECT DISTINCT region, gender FROM studentInfo;")
 
 #EXERCISE 9
 #Insert a duplicate row into one of your toy data tables. Then query the table without including duplicates.
+
+dbGetQuery(mydb,"INSERT INTO My_New_data2 (id_student, date_submitted, score) VALUES ('11391', '18','78');")
+dbGetQuery(mydb, "SELECT DISTINCT score FROM My_New_data2;")
 
 ```
 
@@ -359,6 +443,18 @@ dbGetQuery(mydb, "SELECT * FROM left_table
 
 #EXERCISE 10
 # Create a common id variable in your two toy data tables. Then join those tables so that your query returns all the values from one table and only those that match from the other. 
+
+dbListTables(mydb)
+
+dbGetQuery(mydb, "SELECT * FROM My_New_data1;")
+dbGetQuery(mydb, "ALTER TABLE My_New_data1 ADD id INTEGER AUTO_INCREMENT PRIMARY KEY;")
+dbGetQuery(mydb, "SELECT date_submitted, score FROM My_New_data2;")
+dbGetQuery(mydb, "ALTER TABLE My_New_data2 ADD id INTEGER AUTO_INCREMENT PRIMARY KEY;")
+
+dbGetQuery(mydb,"SELECT l.id_student AS left_table, r.score AS right_table 
+           FROM My_New_data1 AS l 
+           JOIN My_New_data2 AS r ON l.id = r.id")
+
 
 ```
 ```{r}
