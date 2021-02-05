@@ -1,0 +1,7 @@
+"0","#Student demographic data"
+"0","studentInfo <- read.csv(""studentInfo.csv"", header = TRUE)"
+"0","#Student assessment data"
+"0","studentAssessment <- read.csv(""studentAssessment.csv"", header = TRUE)"
+"0","#Course data"
+"0","courses <- read.csv(""courses.csv"", header = TRUE)"
+"0","studentRegistration <- read.csv(""studentRegistration.csv"", header = TRUE)"
