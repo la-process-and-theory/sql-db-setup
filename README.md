@@ -1,3 +1,5 @@
+#testing my setup here#
+
 # SQL & Relational Databases
 
 Relational databases are the backbone of data science and the language that we use to communicate with them is called SQL. The SQL test is a common component for data-adjacenemnt jobs within industry, government and the education sector. It is a useful tool that some argue [spawned the field of data science](https://www.kdnuggets.com/gpspubs/sigkdd-explorations-kdd-10-years.html). Before Big Data was a thing, Knowledge Discovery in Databases (KDD) used simple SQL queries to investigate and understand the nature of the large amounts of data that were being collected by governments and companies. The humble SQL test now torments the budding data scientist as a right of passage in the job search process.
